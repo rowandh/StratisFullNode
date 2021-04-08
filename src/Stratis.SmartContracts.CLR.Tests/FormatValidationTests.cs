@@ -416,6 +416,35 @@ public class Test : SmartContract
             Assert.True(result.IsValid);
         }
 
+        [Fact]
+        public void SmartContract_ValidateFormat_Nested()
+        {
+            var adjustedSource = @"
+using System;
+using Stratis.SmartContracts;
+
+public class Test : SmartContract
+{
+    public Test(ISmartContractState state) : base(state) {}
+}
+
+
+public class Test2 {
+}
+";
+            ContractCompilationResult compilationResult = ContractCompiler.Compile(adjustedSource);
+            Assert.True(compilationResult.Success);
+
+            var validator = new SmartContractFormatValidator();
+
+            byte[] assemblyBytes = compilationResult.Compilation;
+            IContractModuleDefinition decomp = ContractDecompiler.GetModuleDefinition(assemblyBytes).Value;
+
+            var result = validator.Validate(decomp.ModuleDefinition);
+
+            Assert.True(result.IsValid);
+        }
+
         /// <summary>
         /// Get the compiled bytecode for the specified C# source code.
         /// </summary>

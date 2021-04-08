@@ -660,6 +660,42 @@ namespace Stratis.SmartContracts.CLR.Tests
             Assert.False(result.IsValid);
         }
 
+        [Fact]
+        public void Validate_Determinism_Inheritance_Fails_Nested()
+        {
+            ContractCompilationResult compilationResult = ContractCompiler.Compile(@"
+using Stratis.SmartContracts;
+[Deploy]
+public class ControllerContract : SmartContract
+{
+    public ControllerContract(ISmartContractState state) : base(state)
+    {
+    }
+    public void DeployChildContract()
+    {
+        var newAddress = Create<ChildContract>(0, new object[] { ""test"", ""test"" }).NewContractAddress;
+    }
+}
+public class ChildContract : NestedChildContract
+{
+    public ChildContract(ISmartContractState state, string name, string symbol) : base(state, name, symbol)
+    {
+    }
+}
+public class NestedChildContract : SmartContract
+{
+    public NestedChildContract(ISmartContractState state, string name, string symbol) : base(state)
+    {
+    }
+}");
+            Assert.True(compilationResult.Success);
+
+            byte[] assemblyBytes = compilationResult.Compilation;
+            IContractModuleDefinition moduleDefinition = ContractDecompiler.GetModuleDefinition(assemblyBytes).Value;
+            SmartContractValidationResult result = this.validator.Validate(moduleDefinition.ModuleDefinition);
+            Assert.False(result.IsValid);
+        }
+
         #endregion
 
         #region KnownBadMethodCall
