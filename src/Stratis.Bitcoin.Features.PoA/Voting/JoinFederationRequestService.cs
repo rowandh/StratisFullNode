@@ -20,6 +20,7 @@ namespace Stratis.Features.PoA.Voting
 {
     public interface IJoinFederationRequestService
     {
+        (JoinFederationRequest, PubKey) BuildSignatureMessage(string collateralAddress);
         Task<PubKey> JoinFederationAsync(JoinFederationRequestModel request, CancellationToken cancellationToken);
     }
 
@@ -44,32 +45,39 @@ namespace Stratis.Features.PoA.Voting
             this.votingManager = votingManager;
         }
 
-        public async Task<PubKey> JoinFederationAsync(JoinFederationRequestModel request, CancellationToken cancellationToken)
+        public (JoinFederationRequest, PubKey) BuildSignatureMessage(string collateralAddress)
         {
-            // Get the address pub key hash.
-            BitcoinAddress address = BitcoinAddress.Create(request.CollateralAddress, this.counterChainSettings.CounterChainNetwork);
-            KeyId addressKey = PayToPubkeyHashTemplate.Instance.ExtractScriptPubKeyParameters(address.ScriptPubKey);
-
             // Get mining key.
             var keyTool = new KeyTool(this.nodeSettings.DataFolder);
             Key minerKey = keyTool.LoadPrivateKey();
             if (minerKey == null)
                 throw new Exception($"The private key file ({KeyTool.KeyFileDefaultName}) has not been configured or is not present.");
 
+            // Get the address pub key hash.
+            BitcoinAddress address = BitcoinAddress.Create(collateralAddress, this.counterChainSettings.CounterChainNetwork);
+            KeyId addressKey = PayToPubkeyHashTemplate.Instance.ExtractScriptPubKeyParameters(address.ScriptPubKey);
+
             var expectedCollateralAmount = CollateralFederationMember.GetCollateralAmountForPubKey(this.network, minerKey.PubKey);
 
             var collateralAmount = new Money(expectedCollateralAmount, MoneyUnit.BTC);
 
-            var joinRequest = new JoinFederationRequest(minerKey.PubKey, collateralAmount, addressKey);
-
             // Populate the RemovalEventId.
-            var collateralFederationMember = new CollateralFederationMember(minerKey.PubKey, false, joinRequest.CollateralAmount, request.CollateralAddress);
+            var collateralFederationMember = new CollateralFederationMember(minerKey.PubKey, false, collateralAmount, collateralAddress);
 
             byte[] federationMemberBytes = (this.network.Consensus.ConsensusFactory as CollateralPoAConsensusFactory).SerializeFederationMember(collateralFederationMember);
             Poll poll = this.votingManager.GetApprovedPolls().FirstOrDefault(x => x.IsExecuted &&
                   x.VotingData.Key == VoteKey.KickFederationMember && x.VotingData.Data.SequenceEqual(federationMemberBytes));
 
-            joinRequest.RemovalEventId = (poll == null) ? Guid.Empty : new Guid(poll.PollExecutedBlockData.Hash.ToBytes().TakeLast(16).ToArray());
+            var removalEventId = (poll == null) ? Guid.Empty : new Guid(poll.PollExecutedBlockData.Hash.ToBytes().TakeLast(16).ToArray());
+
+            var joinRequest = new JoinFederationRequest(minerKey.PubKey, collateralAmount, addressKey, removalEventId);
+
+            return (joinRequest, minerKey.PubKey);
+        }
+
+        public async Task<PubKey> JoinFederationAsync(JoinFederationRequestModel request, CancellationToken cancellationToken)
+        {
+            var (joinRequest, minerPubKey) = BuildSignatureMessage(request.CollateralAddress);
 
             // Get the signature by calling the counter-chain "signmessage" API.
             var signMessageRequest = new SignMessageRequest()
@@ -101,7 +109,7 @@ namespace Stratis.Features.PoA.Voting
             IWalletService walletService = this.fullNode.NodeService<IWalletService>();
             await walletService.SendTransaction(new SendTransactionRequest(result.Transaction.ToHex()), cancellationToken);
 
-            return minerKey.PubKey;
+            return minerPubKey;
         }
     }
 }

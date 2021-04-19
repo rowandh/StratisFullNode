@@ -49,6 +49,51 @@ namespace Stratis.Bitcoin.Features.Wallet.Controllers
         /// <returns>A JSON object containing the generated mnemonic.</returns>
         /// <response code="200">Returns mnemonic</response>
         /// <response code="400">Unexpected exception occurred</response>
+        [Route("test")]
+        [HttpGet]
+        [ProducesResponseType((int)HttpStatusCode.OK)]
+        [ProducesResponseType((int)HttpStatusCode.BadRequest)]
+        public async Task<IActionResult> Test()
+        {
+            // Check serialization of enum
+            var result = new
+            {
+                Language = Language.English
+            };
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Creates a new wallet on this full node.
+        /// </summary>
+        /// <param name="request">An object containing the necessary parameters to create a wallet.</param>
+        /// <param name="cancellationToken">The Cancellation Token</param>
+        /// <returns>A JSON object containing the mnemonic created for the new wallet.</returns>
+        /// <response code="200">Returns mnemonic</response>
+        /// <response code="400">Invalid request or problem creating wallet</response>
+        /// <response code="409">Wallet already exists</response>
+        /// <response code="500">Request is null</response>
+        [Route("testpost")]
+        [HttpPost]
+        [ProducesResponseType((int)HttpStatusCode.OK)]
+        [ProducesResponseType((int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType((int)HttpStatusCode.Conflict)]
+        [ProducesResponseType((int)HttpStatusCode.InternalServerError)]
+        public async Task<IActionResult> Create([FromBody] Language language, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return Ok(language);
+        }
+
+        /// <summary>
+        /// Generates a mnemonic to use for an HD wallet.
+        /// </summary>
+        /// <param name="language">The language for the words in the mnemonic. The options are: English, French, Spanish, Japanese, ChineseSimplified and ChineseTraditional. Defaults to English.</param>
+        /// <param name="wordCount">The number of words in the mnemonic. The options are: 12,15,18,21 or 24. Defaults to 12.</param>
+        /// <param name="cancellationToken">The Cancellation Token</param>
+        /// <returns>A JSON object containing the generated mnemonic.</returns>
+        /// <response code="200">Returns mnemonic</response>
+        /// <response code="400">Unexpected exception occurred</response>
         [Route("mnemonic")]
         [HttpGet]
         [ProducesResponseType((int)HttpStatusCode.OK)]
