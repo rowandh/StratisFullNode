@@ -97,7 +97,7 @@ namespace Stratis.Features.Collateral
         [ProducesResponseType((int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]
         [ProducesResponseType((int)HttpStatusCode.InternalServerError)]
-        public async Task<IActionResult> GetJoinMessageForSigning([FromBody] JoinFederationRequestModel request, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> GetJoinMessageForSigning([FromBody] GetJoinMessageModel request, CancellationToken cancellationToken = default)
         {
             Guard.NotNull(request, nameof(request));
 
@@ -113,7 +113,7 @@ namespace Stratis.Features.Collateral
 
             try
             {
-                var joinFederationRequest = this.joinFederationRequestService.BuildJoinFederationRequest(request);
+                var joinFederationRequest = this.joinFederationRequestService.BuildJoinFederationRequest(request.CollateralAddress);
 
                 return this.Json(joinFederationRequest.Signature);
             }

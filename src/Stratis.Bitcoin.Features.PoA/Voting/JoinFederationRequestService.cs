@@ -20,7 +20,7 @@ namespace Stratis.Features.PoA.Voting
 {
     public interface IJoinFederationRequestService
     {
-        JoinFederationRequest BuildJoinFederationRequest(JoinFederationRequestModel request);
+        JoinFederationRequest BuildJoinFederationRequest(string collateralAddress);
         Task<PubKey> JoinFederationAsync(JoinFederationRequestModel request, CancellationToken cancellationToken);
     }
 
@@ -48,7 +48,7 @@ namespace Stratis.Features.PoA.Voting
         public async Task<PubKey> JoinFederationAsync(JoinFederationRequestModel request, CancellationToken cancellationToken)
         {
             // Get the address pub key hash.
-            JoinFederationRequest joinRequest = BuildJoinFederationRequest(request);
+            JoinFederationRequest joinRequest = BuildJoinFederationRequest(request.CollateralAddress);
 
             // Get the signature by calling the counter-chain "signmessage" API.
             var signMessageRequest = new SignMessageRequest()
@@ -83,7 +83,7 @@ namespace Stratis.Features.PoA.Voting
             return GetMinerKey().PubKey;
         }
 
-        public JoinFederationRequest BuildJoinFederationRequest(JoinFederationRequestModel request)
+        public JoinFederationRequest BuildJoinFederationRequest(string collateralAddress)
         {
             Key minerKey = GetMinerKey();
 
@@ -91,13 +91,13 @@ namespace Stratis.Features.PoA.Voting
 
             var collateralAmount = new Money(expectedCollateralAmount, MoneyUnit.BTC);
 
-            BitcoinAddress address = BitcoinAddress.Create(request.CollateralAddress, this.counterChainSettings.CounterChainNetwork);
+            BitcoinAddress address = BitcoinAddress.Create(collateralAddress, this.counterChainSettings.CounterChainNetwork);
             KeyId addressKey = PayToPubkeyHashTemplate.Instance.ExtractScriptPubKeyParameters(address.ScriptPubKey);
 
             var joinRequest = new JoinFederationRequest(minerKey.PubKey, collateralAmount, addressKey);
 
             // Populate the RemovalEventId.
-            var collateralFederationMember = new CollateralFederationMember(minerKey.PubKey, false, joinRequest.CollateralAmount, request.CollateralAddress);
+            var collateralFederationMember = new CollateralFederationMember(minerKey.PubKey, false, joinRequest.CollateralAmount, collateralAddress);
 
             byte[] federationMemberBytes = (this.network.Consensus.ConsensusFactory as CollateralPoAConsensusFactory).SerializeFederationMember(collateralFederationMember);
             Poll poll = this.votingManager.GetApprovedPolls().FirstOrDefault(x => x.IsExecuted &&
