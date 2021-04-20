@@ -17,7 +17,6 @@ namespace Stratis.Features.Collateral
     {
         public const string JoinFederation = "joinfederation";
         public const string JoinFederationSigned = "joinfederationsigned";
-
         public const string GetJoinMessageForSigning = "getjoinmessageforsigning";
     }
 
