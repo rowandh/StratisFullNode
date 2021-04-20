@@ -117,7 +117,7 @@ namespace Stratis.Features.Collateral
             {
                 var joinFederationRequest = this.joinFederationRequestService.BuildJoinFederationRequest(request.CollateralAddress);
 
-                return this.Json(joinFederationRequest.Signature);
+                return this.Json(joinFederationRequest.SignatureMessage);
             }
             catch (Exception e)
             {
