@@ -16,6 +16,7 @@ namespace Stratis.Features.Collateral
     public static class CollateralRouteEndPoint
     {
         public const string JoinFederation = "joinfederation";
+        public const string GetJoinMessageForSigning = "getjoinmessageforsigning";
     }
 
     /// <summary>Controller providing operations on collateral federation members.</summary>
@@ -74,6 +75,47 @@ namespace Stratis.Features.Collateral
 
                 this.logger.Trace("(-):'{0}'", model);
                 return this.Json(model);
+            }
+            catch (Exception e)
+            {
+                this.logger.Error("Exception occurred: {0}", e.ToString());
+                this.logger.Trace("(-)[ERROR]");
+                return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, e.Message, e.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Called by a miner wanting to join the federation.
+        /// </summary>
+        /// <param name="request">See <see cref="JoinFederationRequestModel"></see>.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>An instance of <see cref="JoinFederationResponseModel"/>.</returns>
+        /// <response code="200">Returns a valid response.</response>
+        /// <response code="400">Unexpected exception occurred</response>
+        [Route(CollateralRouteEndPoint.GetJoinMessageForSigning)]
+        [HttpPost]
+        [ProducesResponseType((int)HttpStatusCode.OK)]
+        [ProducesResponseType((int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType((int)HttpStatusCode.InternalServerError)]
+        public async Task<IActionResult> GetJoinMessageForSigning([FromBody] JoinFederationRequestModel request, CancellationToken cancellationToken = default)
+        {
+            Guard.NotNull(request, nameof(request));
+
+            // Checks that the request is valid.
+            if (!this.ModelState.IsValid)
+            {
+                this.logger.Trace("(-)[MODEL_STATE_INVALID]");
+                return ModelStateErrors.BuildErrorResponse(this.ModelState);
+            }
+
+            if (!(this.network.Consensus.Options as PoAConsensusOptions).AutoKickIdleMembers)
+                return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, "Error", "This feature is currently disabled.");
+
+            try
+            {
+                var joinFederationRequest = this.joinFederationRequestService.BuildJoinFederationRequest(request);
+
+                return this.Json(joinFederationRequest.Signature);
             }
             catch (Exception e)
             {
