@@ -268,7 +268,7 @@ $collateralWallet = Read-Host "Please Enter the Name of the STRAX Wallet that co
 ""
 $loadedWallets = Invoke-WebRequest -Uri http://localhost:$API/api/Wallet/list-wallets -UseBasicParsing | Select-Object -ExpandProperty content | ConvertFrom-Json | Select-Object -ExpandProperty walletNames
     
-if ( $loadedWallets -contains $collateralWallet )
+if ( $collateralWallet -eq "None" -or $loadedWallets -contains $collateralWallet )
 {
     Write-Host (Get-TimeStamp) "SUCCESS: Collateral wallet found!" -ForegroundColor Green
 }
@@ -357,7 +357,7 @@ if ( $loadedWallets -contains $collateralWallet )
     
 #Check Wallet Balance
 $collateralWalletBalance = (Invoke-WebRequest -Uri http://localhost:$API/api/Wallet/balance?WalletName=$collateralWallet -Method Get -UseBasicParsing | Select-Object -ExpandProperty content | ConvertFrom-Json | Select-Object -ExpandProperty balances | Select-Object -ExpandProperty spendableamount) / 100000000
-if ( $collateralWalletBalance -ge 100000 )
+if ( $collateralWallet -eq "None" -or $collateralWalletBalance -ge 100000 )
 {
     Write-Host (Get-TimeStamp) "SUCCESS: Collateral Wallet contains a balance of over 100,000 STRAX!" -ForegroundColor Green
 }
@@ -515,27 +515,49 @@ Switch ( $registerMasternode )
 {
     Yes
     {
-        if ( -not ( $collateralWalletPassword ) ) 
-        {  
-            $collateralWalletPassword = Read-Host "Please confirm your STRAX (Collateral) wallet password."
-            Clear-Host
-        }
-
-        if ( -not ( $cirrusWalletPassword ) ) 
+        $offlineSigning = Read-Host 'Do you wish to sign the federation join message offline? Enter "Yes" to continue or "No" to exit the script'
+        if ( $offlineSigning -eq "Yes" )
         {
-            $cirrusWalletPassword = Read-Host "Please confirm your Cirrus wallet password."
-            Clear-Host
-        }
+            $getjoinmessagebody = ConvertTo-Json @{
+                collateralAddress = $collateralAddress
+            }
+            $getjoinmessage = Invoke-WebRequest -Uri http://localhost:$API/api/Collateral/getjoinmessageforsigning -Body $getjoinmessagebody -ContentType "application/json-patch+json" -UseBasicParsing -Method Post
+            Write-Host (Get-TimeStamp) "Please sign this join message: " ($getjoinmessage.content) -ForegroundColor Cyan
+            $signature = Read-Host "Please enter the message signature when signed by the collateral address"
 
-        $registerBody = ConvertTo-Json @{
-            collateralAddress = $collateralAddress
-            collateralWalletName = $collateralWallet
-            collateralWalletPassword = $collateralWalletPassword
-            walletName = $cirrusWallet
-            walletPassword = $cirrusWalletPassword
-            walletAccount = "account 0"
+            $registerBody = ConvertTo-Json @{
+                collateralAddress = $collateralAddress
+                walletName = $cirrusWallet
+                walletPassword = $cirrusWalletPassword
+                signature = $signature
+                walletAccount = "account 0"
+            }
+            $register = Invoke-WebRequest -Uri http://localhost:$API/api/Collateral/joinfederationsigned -Body $registerBody -ContentType "application/json-patch+json" -UseBasicParsing -Method Post
         }
-        $register = Invoke-WebRequest -Uri http://localhost:$API/api/Collateral/joinfederation -Body $registerBody -ContentType "application/json-patch+json" -UseBasicParsing -Method Post
+        else 
+        {
+            if ( -not ( $collateralWalletPassword ) ) 
+            {  
+                $collateralWalletPassword = Read-Host "Please confirm your STRAX (Collateral) wallet password."
+                Clear-Host
+            }
+    
+            if ( -not ( $cirrusWalletPassword ) ) 
+            {
+                $cirrusWalletPassword = Read-Host "Please confirm your Cirrus wallet password."
+                Clear-Host
+            }
+
+            $registerBody = ConvertTo-Json @{
+                collateralAddress = $collateralAddress
+                collateralWalletName = $collateralWallet
+                collateralWalletPassword = $collateralWalletPassword
+                walletName = $cirrusWallet
+                walletPassword = $cirrusWalletPassword
+                walletAccount = "account 0"
+            }
+            $register = Invoke-WebRequest -Uri http://localhost:$API/api/Collateral/joinfederation -Body $registerBody -ContentType "application/json-patch+json" -UseBasicParsing -Method Post
+        }
 
         if ( ($register.content | ConvertFrom-Json -ErrorAction SilentlyContinue | Select-Object -ExpandProperty minerPublicKey) -match '^.{66,66}$' )
         {
@@ -544,18 +566,18 @@ Switch ( $registerMasternode )
             Start-Sleep 30
             pause
         }
-            Else
-            {
-                Write-Host (Get-TimeStamp) "ERROR: Something went  wrong when attmepting to register..." -ForegroundColor Red
-                ""
-                Write-Host "Cirrus Wallet Name: $cirrusWallet" -ForegroundColor Yellow
-                Write-Host "STRAX Wallet Name: $collateralWallet" -ForegroundColor Yellow
-                Write-Host "Collateral Address: $collateralAddress" -ForegroundColor Yellow
-                ""
-                Write-Host (Get-TimeStamp) "INFO: Please try again ensuring that the detail is entered  correctly, such as Wallet Passowrds. If you continue to experience issues, please contact support via Discord" -ForegroundColor Cyan
-                Start-Sleep 60
-                Exit
-            }
+        Else
+        {
+            Write-Host (Get-TimeStamp) "ERROR: Something went  wrong when attmepting to register..." -ForegroundColor Red
+            ""
+            Write-Host "Cirrus Wallet Name: $cirrusWallet" -ForegroundColor Yellow
+            Write-Host "STRAX Wallet Name: $collateralWallet" -ForegroundColor Yellow
+            Write-Host "Collateral Address: $collateralAddress" -ForegroundColor Yellow
+            ""
+            Write-Host (Get-TimeStamp) "INFO: Please try again ensuring that the detail is entered  correctly, such as Wallet Passowrds. If you continue to experience issues, please contact support via Discord" -ForegroundColor Cyan
+            Start-Sleep 60
+            Exit
+        }        
     }
 
     No
