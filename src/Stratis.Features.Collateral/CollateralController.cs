@@ -158,7 +158,7 @@ namespace Stratis.Features.Collateral
             {
                 var joinFederationRequest = this.joinFederationRequestService.BuildJoinFederationRequest(request.CollateralAddress);
 
-                joinFederationRequest.AddSignature(request.SignedJoinFederationMessage);
+                joinFederationRequest.AddSignature(request.Signature);
 
                 PubKey minerPubKey = await this.joinFederationRequestService.BroadcastSignedJoinRequestAsync(joinFederationRequest, cancellationToken);
 

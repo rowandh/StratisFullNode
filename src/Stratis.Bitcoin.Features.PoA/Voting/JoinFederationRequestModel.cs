@@ -42,7 +42,7 @@ namespace Stratis.Features.PoA.Voting
     }
 
     /// <summary>
-    /// A class containing the necessary parameters for a join federation request.
+    /// Contains the collateral address for which we want to build the join message for signing.
     /// </summary>
     public sealed class GetJoinMessageModel
     {
@@ -55,7 +55,7 @@ namespace Stratis.Features.PoA.Voting
     }
 
     /// <summary>
-    /// A class containing the necessary parameters for a join federation request.
+    /// A class containing the necessary parameters for a join federation request with a signed message.
     /// </summary>
     public sealed class JoinFederationRequestWithSignature
     {
@@ -81,9 +81,9 @@ namespace Stratis.Features.PoA.Voting
         [JsonProperty(PropertyName = "walletAccount")]
         public string WalletAccount { get; set; }
 
-        /// <summary>The join federation message signed by the collateral address key.</summary>
-        [Required(ErrorMessage = "The signed join federation message is required")]
-        [JsonProperty(PropertyName = "signedJoinFederationMessage")]
-        public string SignedJoinFederationMessage { get; set; }
+        /// <summary>The join federation message signature as signed by the collateral address key.</summary>
+        [Required(ErrorMessage = "The signature is required")]
+        [JsonProperty(PropertyName = "signature")]
+        public string Signature { get; set; }
     }
 }
