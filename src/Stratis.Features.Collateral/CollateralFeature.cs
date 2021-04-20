@@ -76,13 +76,10 @@ namespace Stratis.Features.Collateral
         }
 
         /// <summary>
-        /// Adds mining to the side chain node when on a proof-of-authority network with collateral enabled.
+        /// Adds ability to build federation join requests.
         /// </summary>
-        public static IFullNodeBuilder AddCollateralTransactionBuilding(this IFullNodeBuilder fullNodeBuilder)
+        public static IFullNodeBuilder AddFederationJoinRequestBuilding(this IFullNodeBuilder fullNodeBuilder)
         {
-            // Inject the CheckCollateralFullValidationRule as the first Full Validation Rule.
-            // This is still a bit hacky and we need to properly review the dependencies again between the different side chain nodes.
-
             fullNodeBuilder.ConfigureFeature(features =>
             {
                 features
@@ -91,10 +88,6 @@ namespace Stratis.Features.Collateral
                 .DependOn<PoAFeature>()
                 .FeatureServices(services =>
                 {
-                    //services.AddSingleton<IPoAMiner, CollateralPoAMiner>();
-                    //services.AddSingleton<MinerSettings>();
-                    //services.AddSingleton<BlockDefinition, T>();
-                    //services.AddSingleton<IBlockBufferGenerator, BlockBufferGenerator>();
                     services.AddSingleton<IJoinFederationRequestService, JoinFederationRequestService>();
                     services.AddSingleton<ICollateralChecker, CollateralChecker>();
                 });
