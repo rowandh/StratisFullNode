@@ -21,7 +21,7 @@ namespace Stratis.Features.PoA.Voting
     public interface IJoinFederationRequestService
     {
         JoinFederationRequest BuildJoinFederationRequest(string collateralAddress);
-        Task<PubKey> BroadcastSignedJoinRequestAsync(JoinFederationRequest request, CancellationToken cancellationToken)
+        Task<PubKey> BroadcastSignedJoinRequestAsync(JoinFederationRequest request, string walletName, string walletPassword, string walletAccount, CancellationToken cancellationToken);
         Task<PubKey> JoinFederationAsync(JoinFederationRequestModel request, CancellationToken cancellationToken);
     }
 
@@ -72,14 +72,14 @@ namespace Stratis.Features.PoA.Voting
                 throw new Exception($"The call to sign the join federation request failed: '{err.Message}'.");
             }
 
-            return await BroadcastSignedJoinRequestAsync(joinRequest, cancellationToken);
+            return await BroadcastSignedJoinRequestAsync(joinRequest, request.WalletName, request.WalletPassword, request.WalletAccount, cancellationToken);
         }
 
-        public async Task<PubKey> BroadcastSignedJoinRequestAsync(JoinFederationRequest request, CancellationToken cancellationToken)
+        public async Task<PubKey> BroadcastSignedJoinRequestAsync(JoinFederationRequest request, string walletName, string walletPassword, string walletAccount, CancellationToken cancellationToken)
         {
             IWalletTransactionHandler walletTransactionHandler = this.fullNode.NodeService<IWalletTransactionHandler>();
             var encoder = new JoinFederationRequestEncoder();
-            JoinFederationRequestResult result = JoinFederationRequestBuilder.BuildTransaction(walletTransactionHandler, this.network, joinRequest, encoder, request.WalletName, request.WalletAccount, request.WalletPassword);
+            JoinFederationRequestResult result = JoinFederationRequestBuilder.BuildTransaction(walletTransactionHandler, this.network, request, encoder, walletName, walletAccount, walletPassword);
             if (result.Transaction == null)
                 throw new Exception(result.Errors);
 

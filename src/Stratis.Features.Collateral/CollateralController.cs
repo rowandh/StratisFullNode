@@ -160,7 +160,7 @@ namespace Stratis.Features.Collateral
 
                 joinFederationRequest.AddSignature(request.Signature);
 
-                PubKey minerPubKey = await this.joinFederationRequestService.BroadcastSignedJoinRequestAsync(joinFederationRequest, cancellationToken);
+                PubKey minerPubKey = await this.joinFederationRequestService.BroadcastSignedJoinRequestAsync(joinFederationRequest, request.WalletName, request.WalletPassword, request.WalletAccount, cancellationToken);
 
                 var model = new JoinFederationResponseModel
                 {
