@@ -261,99 +261,6 @@ $variablesToClear | ForEach-Object { if ( Get-Variable $_ -ErrorAction SilentlyC
 
 #Check Collateral Wallet Existence
 $API = $mainChainAPIPort
-Write-Host (Get-TimeStamp) INFO: "Assessing Masternode Requirements" -ForegroundColor Cyan
-""
-$collateralWallet = Read-Host "Please Enter the Name of the STRAX Wallet that contains the required collateral of a 100 000 STRAX"
-
-""
-$loadedWallets = Invoke-WebRequest -Uri http://localhost:$API/api/Wallet/list-wallets -UseBasicParsing | Select-Object -ExpandProperty content | ConvertFrom-Json | Select-Object -ExpandProperty walletNames
-    
-if ( $collateralWallet -eq "None" -or $loadedWallets -contains $collateralWallet )
-{
-    Write-Host (Get-TimeStamp) "SUCCESS: Collateral wallet found!" -ForegroundColor Green
-}
-    Else
-    {
-        Write-Host (Get-TimeStamp) "ERROR: No Wallets could be found.. Please restore a wallet that holds the required collateral" -ForegroundColor Red
-        ""
-        $restoreWallet = Read-Host -Prompt 'Would you like to restore the wallet using this script? Enter "Yes" to continue or "No" to exit the script'
-        ""
-        While ( $restoreWallet -ne "Yes" -and $restoreWallet -ne "No" )
-        {
-            ""
-            $restoreWallet = Read-Host -Prompt "Enter 'Yes' to continue or 'No' to exit the script"
-            ""
-        }
-        Switch ( $restoreWallet )
-        {
-            Yes
-            {
-                $collateralWalletMnemonic = Read-Host "Please enter your 12-Words used to recover your wallet"
-                Clear-Host
-                $collateralWalletPassphrase = Read-Host "Please enter your Wallet Passphrase"
-                Clear-Host
-                $collateralWalletPassword = Read-Host "Please enter a password used to encrypt the wallet"
-                Clear-Host
-                $validateVariables = $collateralWallet, $collateralWalletMnemonic, $collateralWalletPassword
-                $validateVariables | ForEach-Object { 
-                if ( $_ -eq $null ) {
-                    Write-Host (Get-TimeStamp) "ERROR: There was some missing wallet detail - Please re-run this script" -ForegroundColor Red
-                    Start-Sleep 30
-                    Exit
-                    }
-                }
-                                         
-                $collateralRestoreBody = @{
-                    mnemonic = $collateralWalletMnemonic
-                    password = $collateralWalletPassword
-                    name = $collateralWallet
-                    creationDate = "2020-11-01T00:00:01.690Z"
-                }
-
-                if ( $collateralWalletPassphrase )
-                {
-                    $collateralRestoreBody.Add("passphrase",$collateralWalletPassphrase)
-                }
-                    Else
-                    {
-                        $collateralRestoreBody.Add("passphrase","")
-                    }
-                $collateralRestoreBody = ConvertTo-Json $collateralRestoreBody
-
-                $restoreWallet = Invoke-WebRequest -Uri http://localhost:$API/api/wallet/recover -UseBasicParsing -Method Post -Body $collateralRestoreBody -ContentType "application/json"
-                if ( (Invoke-WebRequest -Uri http://localhost:$API/api/Wallet/list-wallets -UseBasicParsing | Select-Object -ExpandProperty content | ConvertFrom-Json | Select-Object -ExpandProperty walletNames) -notcontains $CollateralWallet ) 
-                {                    
-                    Write-Host (Get-TimeStamp) "ERROR: There was an error calling the Wallet Recover API - Please re-run this script" -ForegroundColor Red
-                    Start-Sleep 30
-                    Exit
-                }
-
-                Invoke-WebRequest -Uri http://localhost:$API/api/Wallet/remove-transactions?WalletName=$collateralWallet"&"all=true"&"ReSync=true -UseBasicParsing -Method Delete
-                Clear-Host
-                
-                Write-Host (Get-TimeStamp) INFO: "Syncing $collateralWallet - This may take some time and -1 may be dispalyed for some time. The process is wholly dependant on avaialble resource, please do no close this window..." -ForegroundColor Cyan
-                While ( (GetCollateral-WalletHeight) -ne (Get-LocalHeight) )
-                {
-                    $a = Get-LocalHeight
-                    $b = GetCollateral-WalletHeight
-                    $c = $a - $b
-                    [int]$percentage = $b / $a * 100
-                    ""
-                    Write-Host (Get-TimeStamp) "$percentage% Synced" -ForegroundColor Cyan
-                    Write-Host (Get-TimeStamp) "The Current Tip is $a" -ForegroundColor Yellow
-                    Write-Host (Get-TimeStamp) "$c Blocks are Required..." -ForegroundColor Yellow
-                    Start-Sleep 10
-                }
-            }
-
-            No
-            {
-                Write-Host (Get-TimeStamp) "ERROR: You have chosen not to restore a wallet - Please re-run this script" -ForegroundColor Red
-                Start-Sleep 30
-                Exit
-            }
-        }
-    }
     
 #Check Wallet Balance
 $collateralWalletBalance = (Invoke-WebRequest -Uri http://localhost:$API/api/Wallet/balance?WalletName=$collateralWallet -Method Get -UseBasicParsing | Select-Object -ExpandProperty content | ConvertFrom-Json | Select-Object -ExpandProperty balances | Select-Object -ExpandProperty spendableamount) / 100000000
@@ -515,7 +422,7 @@ Switch ( $registerMasternode )
 {
     Yes
     {
-        $offlineSigning = Read-Host 'Do you wish to sign the federation join message offline? Enter "Yes" to continue or "No" to exit the script'
+        $offlineSigning = Read-Host 'ADVANCED USERS ONLY: Do you wish to sign the federation join message offline? Enter "Yes" to continue or "No" to exit the script. WARNING: This means your collateral will not be checked and you may lose your 500CRS if the signing process was not performed correctly'
         if ( $offlineSigning -eq "Yes" )
         {
             $getjoinmessagebody = ConvertTo-Json @{
@@ -536,6 +443,100 @@ Switch ( $registerMasternode )
         }
         else 
         {
+            Write-Host (Get-TimeStamp) INFO: "Assessing Masternode Requirements" -ForegroundColor Cyan
+            ""
+            $collateralWallet = Read-Host "Please Enter the Name of the STRAX Wallet that contains the required collateral of a 100 000 STRAX"
+            
+            ""
+            $loadedWallets = Invoke-WebRequest -Uri http://localhost:$API/api/Wallet/list-wallets -UseBasicParsing | Select-Object -ExpandProperty content | ConvertFrom-Json | Select-Object -ExpandProperty walletNames
+                
+            if ( $loadedWallets -contains $collateralWallet )
+            {
+                Write-Host (Get-TimeStamp) "SUCCESS: Collateral wallet found!" -ForegroundColor Green
+            }
+            Else
+            {
+                Write-Host (Get-TimeStamp) "ERROR: No Wallets could be found.. Please restore a wallet that holds the required collateral" -ForegroundColor Red
+                ""
+                $restoreWallet = Read-Host -Prompt 'Would you like to restore the wallet using this script? Enter "Yes" to continue or "No" to exit the script'
+                ""
+                While ( $restoreWallet -ne "Yes" -and $restoreWallet -ne "No" )
+                {
+                    ""
+                    $restoreWallet = Read-Host -Prompt "Enter 'Yes' to continue or 'No' to exit the script"
+                    ""
+                }
+                Switch ( $restoreWallet )
+                {
+                    Yes
+                    {
+                        $collateralWalletMnemonic = Read-Host "Please enter your 12-Words used to recover your wallet"
+                        Clear-Host
+                        $collateralWalletPassphrase = Read-Host "Please enter your Wallet Passphrase"
+                        Clear-Host
+                        $collateralWalletPassword = Read-Host "Please enter a password used to encrypt the wallet"
+                        Clear-Host
+                        $validateVariables = $collateralWallet, $collateralWalletMnemonic, $collateralWalletPassword
+                        $validateVariables | ForEach-Object { 
+                        if ( $_ -eq $null ) {
+                            Write-Host (Get-TimeStamp) "ERROR: There was some missing wallet detail - Please re-run this script" -ForegroundColor Red
+                            Start-Sleep 30
+                            Exit
+                            }
+                        }
+                                                    
+                        $collateralRestoreBody = @{
+                            mnemonic = $collateralWalletMnemonic
+                            password = $collateralWalletPassword
+                            name = $collateralWallet
+                            creationDate = "2020-11-01T00:00:01.690Z"
+                        }
+            
+                        if ( $collateralWalletPassphrase )
+                        {
+                            $collateralRestoreBody.Add("passphrase",$collateralWalletPassphrase)
+                        }
+                            Else
+                            {
+                                $collateralRestoreBody.Add("passphrase","")
+                            }
+                        $collateralRestoreBody = ConvertTo-Json $collateralRestoreBody
+            
+                        $restoreWallet = Invoke-WebRequest -Uri http://localhost:$API/api/wallet/recover -UseBasicParsing -Method Post -Body $collateralRestoreBody -ContentType "application/json"
+                        if ( (Invoke-WebRequest -Uri http://localhost:$API/api/Wallet/list-wallets -UseBasicParsing | Select-Object -ExpandProperty content | ConvertFrom-Json | Select-Object -ExpandProperty walletNames) -notcontains $CollateralWallet ) 
+                        {                    
+                            Write-Host (Get-TimeStamp) "ERROR: There was an error calling the Wallet Recover API - Please re-run this script" -ForegroundColor Red
+                            Start-Sleep 30
+                            Exit
+                        }
+            
+                        Invoke-WebRequest -Uri http://localhost:$API/api/Wallet/remove-transactions?WalletName=$collateralWallet"&"all=true"&"ReSync=true -UseBasicParsing -Method Delete
+                        Clear-Host
+                        
+                        Write-Host (Get-TimeStamp) INFO: "Syncing $collateralWallet - This may take some time and -1 may be dispalyed for some time. The process is wholly dependant on avaialble resource, please do no close this window..." -ForegroundColor Cyan
+                        While ( (GetCollateral-WalletHeight) -ne (Get-LocalHeight) )
+                        {
+                            $a = Get-LocalHeight
+                            $b = GetCollateral-WalletHeight
+                            $c = $a - $b
+                            [int]$percentage = $b / $a * 100
+                            ""
+                            Write-Host (Get-TimeStamp) "$percentage% Synced" -ForegroundColor Cyan
+                            Write-Host (Get-TimeStamp) "The Current Tip is $a" -ForegroundColor Yellow
+                            Write-Host (Get-TimeStamp) "$c Blocks are Required..." -ForegroundColor Yellow
+                            Start-Sleep 10
+                        }
+                    }
+            
+                    No
+                    {
+                        Write-Host (Get-TimeStamp) "ERROR: You have chosen not to restore a wallet - Please re-run this script" -ForegroundColor Red
+                        Start-Sleep 30
+                        Exit
+                    }
+                }
+            }
+
             if ( -not ( $collateralWalletPassword ) ) 
             {  
                 $collateralWalletPassword = Read-Host "Please confirm your STRAX (Collateral) wallet password."
@@ -586,87 +587,3 @@ Switch ( $registerMasternode )
         Start-Sleep 30
     }
 }
-
-          
-# SIG # Begin signature block
-# MIIO+wYJKoZIhvcNAQcCoIIO7DCCDugCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
-# gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUaI73JqpdFrCnxEf+ERUtxeH8
-# lpegggxDMIIFfzCCBGegAwIBAgIQB+RAO8y2U5CYymWFgvSvNDANBgkqhkiG9w0B
-# AQsFADBsMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYD
-# VQQLExB3d3cuZGlnaWNlcnQuY29tMSswKQYDVQQDEyJEaWdpQ2VydCBFViBDb2Rl
-# IFNpZ25pbmcgQ0EgKFNIQTIpMB4XDTE4MDcxNzAwMDAwMFoXDTIxMDcyMTEyMDAw
-# MFowgZ0xEzARBgsrBgEEAYI3PAIBAxMCR0IxHTAbBgNVBA8MFFByaXZhdGUgT3Jn
-# YW5pemF0aW9uMREwDwYDVQQFEwgxMDU1MDMzMzELMAkGA1UEBhMCR0IxDzANBgNV
-# BAcTBkxvbmRvbjEaMBgGA1UEChMRU3RyYXRpcyBHcm91cCBMdGQxGjAYBgNVBAMT
-# EVN0cmF0aXMgR3JvdXAgTHRkMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKC
-# AQEAszr/7HowdxN95x+Utcge+d7wKwUA+kaIKrmlLFqFVg8ZdyvOZQN6gU/RRy6F
-# NceRr5YAek4cg2T2MQs7REdkHDFzkAhOb1m/9b6fOJoF6YG3owhlyQZmtD0H64sj
-# ZEpLkiuOFDOjxk8ICPrsoHcki5qoKdy7WkKdCWCTuSHKLNPUpfGyHYhjcdB5DTO2
-# S4P+9JbIidPn0LR/NpjVCQXzFTTtteT+qj2cRTC4+ITIGWaWhulNiemLMSCF7Aar
-# SAOQU8TSM9hLs4lwhtaLfx9j8bnQzz0YSYHUforeYrQCxmD66/KAup/OAZYQ6rYU
-# kv5Eq+aNLd2Ot1FC1mQ3hOJW0QIDAQABo4IB6TCCAeUwHwYDVR0jBBgwFoAUj+h+
-# 8G0yagAFI8dwl2o6kP9r6tQwHQYDVR0OBBYEFIV31zNBlgBtHnHANerRL6iOxCqa
-# MCYGA1UdEQQfMB2gGwYIKwYBBQUHCAOgDzANDAtHQi0xMDU1MDMzMzAOBgNVHQ8B
-# Af8EBAMCB4AwEwYDVR0lBAwwCgYIKwYBBQUHAwMwewYDVR0fBHQwcjA3oDWgM4Yx
-# aHR0cDovL2NybDMuZGlnaWNlcnQuY29tL0VWQ29kZVNpZ25pbmdTSEEyLWcxLmNy
-# bDA3oDWgM4YxaHR0cDovL2NybDQuZGlnaWNlcnQuY29tL0VWQ29kZVNpZ25pbmdT
-# SEEyLWcxLmNybDBLBgNVHSAERDBCMDcGCWCGSAGG/WwDAjAqMCgGCCsGAQUFBwIB
-# FhxodHRwczovL3d3dy5kaWdpY2VydC5jb20vQ1BTMAcGBWeBDAEDMH4GCCsGAQUF
-# BwEBBHIwcDAkBggrBgEFBQcwAYYYaHR0cDovL29jc3AuZGlnaWNlcnQuY29tMEgG
-# CCsGAQUFBzAChjxodHRwOi8vY2FjZXJ0cy5kaWdpY2VydC5jb20vRGlnaUNlcnRF
-# VkNvZGVTaWduaW5nQ0EtU0hBMi5jcnQwDAYDVR0TAQH/BAIwADANBgkqhkiG9w0B
-# AQsFAAOCAQEAadI2wIeKuOS2d3N49ilrMWEESf91zG6ifoJAES78+Q1X3pGWFltH
-# h3J66FOwtC5XYg+UP3MDQybGb+yNBnABypIRE8RJhcmPeRbHjTqA2txl3B16evUm
-# JX4Esmc7NOraGn03S9ZMH8Fa2coX/Epb/RbvY4e/z0O5dOsknfBOKXCEKrjzGVxt
-# p9WIksRQLRdL0zqkKsxAU8gyU6O0neOCO4sYXvAb2CuLxJNMkEUO8mZe1Sz0DRLa
-# hHueLB2EoKlyhFvA8SjehIcLQlE5FQvvxqmyy1yBovAWL6ktCaFCN6bLe/WTWPtu
-# g5NNcn4cvq7X5gXQ8iNAPw+ZHmBipK0GXDCCBrwwggWkoAMCAQICEAPxtOFfOoLx
-# FJZ4s9fYR1wwDQYJKoZIhvcNAQELBQAwbDELMAkGA1UEBhMCVVMxFTATBgNVBAoT
-# DERpZ2lDZXJ0IEluYzEZMBcGA1UECxMQd3d3LmRpZ2ljZXJ0LmNvbTErMCkGA1UE
-# AxMiRGlnaUNlcnQgSGlnaCBBc3N1cmFuY2UgRVYgUm9vdCBDQTAeFw0xMjA0MTgx
-# MjAwMDBaFw0yNzA0MTgxMjAwMDBaMGwxCzAJBgNVBAYTAlVTMRUwEwYDVQQKEwxE
-# aWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xKzApBgNVBAMT
-# IkRpZ2lDZXJ0IEVWIENvZGUgU2lnbmluZyBDQSAoU0hBMikwggEiMA0GCSqGSIb3
-# DQEBAQUAA4IBDwAwggEKAoIBAQCnU/oPsrUT8WTPhID8roA10bbXx6MsrBosrPGE
-# rDo1EjqSkbpX5MTJ8y+oSDy31m7clyK6UXlhr0MvDbebtEkxrkRYPqShlqeHTyN+
-# w2xlJJBVPqHKI3zFQunEemJFm33eY3TLnmMl+ISamq1FT659H8gTy3WbyeHhivgL
-# DJj0yj7QRap6HqVYkzY0visuKzFYZrQyEJ+d8FKh7+g+03byQFrc+mo9G0utdrCM
-# XO42uoPqMKhM3vELKlhBiK4AiasD0RaCICJ2615UOBJi4dJwJNvtH3DSZAmALeK2
-# nc4f8rsh82zb2LMZe4pQn+/sNgpcmrdK0wigOXn93b89OgklAgMBAAGjggNYMIID
-# VDASBgNVHRMBAf8ECDAGAQH/AgEAMA4GA1UdDwEB/wQEAwIBhjATBgNVHSUEDDAK
-# BggrBgEFBQcDAzB/BggrBgEFBQcBAQRzMHEwJAYIKwYBBQUHMAGGGGh0dHA6Ly9v
-# Y3NwLmRpZ2ljZXJ0LmNvbTBJBggrBgEFBQcwAoY9aHR0cDovL2NhY2VydHMuZGln
-# aWNlcnQuY29tL0RpZ2lDZXJ0SGlnaEFzc3VyYW5jZUVWUm9vdENBLmNydDCBjwYD
-# VR0fBIGHMIGEMECgPqA8hjpodHRwOi8vY3JsMy5kaWdpY2VydC5jb20vRGlnaUNl
-# cnRIaWdoQXNzdXJhbmNlRVZSb290Q0EuY3JsMECgPqA8hjpodHRwOi8vY3JsNC5k
-# aWdpY2VydC5jb20vRGlnaUNlcnRIaWdoQXNzdXJhbmNlRVZSb290Q0EuY3JsMIIB
-# xAYDVR0gBIIBuzCCAbcwggGzBglghkgBhv1sAwIwggGkMDoGCCsGAQUFBwIBFi5o
-# dHRwOi8vd3d3LmRpZ2ljZXJ0LmNvbS9zc2wtY3BzLXJlcG9zaXRvcnkuaHRtMIIB
-# ZAYIKwYBBQUHAgIwggFWHoIBUgBBAG4AeQAgAHUAcwBlACAAbwBmACAAdABoAGkA
-# cwAgAEMAZQByAHQAaQBmAGkAYwBhAHQAZQAgAGMAbwBuAHMAdABpAHQAdQB0AGUA
-# cwAgAGEAYwBjAGUAcAB0AGEAbgBjAGUAIABvAGYAIAB0AGgAZQAgAEQAaQBnAGkA
-# QwBlAHIAdAAgAEMAUAAvAEMAUABTACAAYQBuAGQAIAB0AGgAZQAgAFIAZQBsAHkA
-# aQBuAGcAIABQAGEAcgB0AHkAIABBAGcAcgBlAGUAbQBlAG4AdAAgAHcAaABpAGMA
-# aAAgAGwAaQBtAGkAdAAgAGwAaQBhAGIAaQBsAGkAdAB5ACAAYQBuAGQAIABhAHIA
-# ZQAgAGkAbgBjAG8AcgBwAG8AcgBhAHQAZQBkACAAaABlAHIAZQBpAG4AIABiAHkA
-# IAByAGUAZgBlAHIAZQBuAGMAZQAuMB0GA1UdDgQWBBSP6H7wbTJqAAUjx3CXajqQ
-# /2vq1DAfBgNVHSMEGDAWgBSxPsNpA/i/RwHUmCYaCALvY2QrwzANBgkqhkiG9w0B
-# AQsFAAOCAQEAGTNKDIEzN9utNsnkyTq7tRsueqLi9ENCF56/TqFN4bHb6YHdnwHy
-# 5IjV6f4J/SHB7F2A0vDWwUPC/ncr2/nXkTPObNWyGTvmLtbJk0+IQI7N4fV+8Q/G
-# WVZy6OtqQb0c1UbVfEnKZjgVwb/gkXB3h9zJjTHJDCmiM+2N4ofNiY0/G//V4BqX
-# i3zabfuoxrI6Zmt7AbPN2KY07BIBq5VYpcRTV6hg5ucCEqC5I2SiTbt8gSVkIb7P
-# 7kIYQ5e7pTcGr03/JqVNYUvsRkG4Zc64eZ4IlguBjIo7j8eZjKMqbphtXmHGlreK
-# uWEtk7jrDgRD1/X+pvBi1JlqpcHB8GSUgDGCAiIwggIeAgEBMIGAMGwxCzAJBgNV
-# BAYTAlVTMRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdp
-# Y2VydC5jb20xKzApBgNVBAMTIkRpZ2lDZXJ0IEVWIENvZGUgU2lnbmluZyBDQSAo
-# U0hBMikCEAfkQDvMtlOQmMplhYL0rzQwCQYFKw4DAhoFAKB4MBgGCisGAQQBgjcC
-# AQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYB
-# BAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFDNyjn39gPPC
-# J7Z4/e+mAZmCWil9MA0GCSqGSIb3DQEBAQUABIIBAGfEv2mGygtzNxl+6PM3nJDh
-# jWdJW6krHbdZhAPoHuOEEBNPSKuw8xB7rxdEl8gKHfW38sHFeL0i91J2wogI7Vpj
-# 6Es199NFsh/iU/Mp4el+yLv2t2Q2z/B3kbqg313kNkrmDWA7h6CumoTwvF+zei48
-# dql/ZEHCakLQFefuNiKmR6pog1fEmuCz2QuKN8lCOOy9gKJsXL/kAFUf07NgRtL0
-# rN10OlZ49l8n/GOxGQvP0nb0rtTEgd4Ca00x5LKTKWCCk9Ja/bUZX/dED5Iaoqks
-# SBs3+Y5sG0LyLU5R0qMFPO1lry47XJjYvu7XcIoAdJjfPUiodDgIdJ144UJgRnQ=
-# SIG # End signature block
