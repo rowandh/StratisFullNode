@@ -47,15 +47,15 @@ namespace Stratis.Features.PoA.Voting
 
         public (JoinFederationRequest, PubKey) BuildSignatureMessage(string collateralAddress)
         {
+            // Get the address pub key hash.
+            BitcoinAddress address = BitcoinAddress.Create(collateralAddress, this.counterChainSettings.CounterChainNetwork);
+            KeyId addressKey = PayToPubkeyHashTemplate.Instance.ExtractScriptPubKeyParameters(address.ScriptPubKey);
+
             // Get mining key.
             var keyTool = new KeyTool(this.nodeSettings.DataFolder);
             Key minerKey = keyTool.LoadPrivateKey();
             if (minerKey == null)
                 throw new Exception($"The private key file ({KeyTool.KeyFileDefaultName}) has not been configured or is not present.");
-
-            // Get the address pub key hash.
-            BitcoinAddress address = BitcoinAddress.Create(collateralAddress, this.counterChainSettings.CounterChainNetwork);
-            KeyId addressKey = PayToPubkeyHashTemplate.Instance.ExtractScriptPubKeyParameters(address.ScriptPubKey);
 
             var expectedCollateralAmount = CollateralFederationMember.GetCollateralAmountForPubKey(this.network, minerKey.PubKey);
 
