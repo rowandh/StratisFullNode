@@ -239,6 +239,17 @@ namespace NBitcoin
         }
 
         /// <summary>
+        /// Get a <see cref="ChainedHeader"/> based on its height. This overload exists to prevent calls 
+        /// using a ulong height parameter being made to <see cref="GetHeader(uint256)"/> due to implicit type conversion.
+        /// </summary>
+        /// <returns></returns>
+        public virtual ChainedHeader GetHeader(ulong height)
+        {
+            // Height is interchangeably used as unsigned/signed ints and longs so casting to an int here should be fine
+            return this.GetHeader((int)height);
+        }
+
+        /// <summary>
         /// Get a <see cref="ChainedHeader"/> based on it's height.
         /// </summary>
         public ChainedHeader this[int key] => this.GetHeader(key);

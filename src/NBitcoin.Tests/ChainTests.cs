@@ -331,6 +331,24 @@ namespace NBitcoin.Tests
             }
         }
 
+        [Fact]
+        [Trait("UnitTest", "UnitTest")]
+        public void GanGetHeaderUsingUlong()
+        {
+            var chain = new ChainIndexer(this.network);
+
+            this.AddBlock(chain);
+            this.AddBlock(chain);
+            this.AddBlock(chain);
+
+            ulong height = 0;
+
+            // If height is converted to a uint256 here we expect that
+            // a lookup will be made using blocksById, which should return null
+            // as no block with id = 0 will exist.
+            Assert.NotNull(chain.GetHeader(height));
+        }
+
         private ChainIndexer CreateChain(int height)
         {
             return this.CreateChain(TestUtils.CreateFakeBlock(this.network).Header, height);
