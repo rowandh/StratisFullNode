@@ -15,8 +15,8 @@ namespace Stratis.Features.SystemContracts.Tests
         public void Complete_Execution_Success()
         {
             var network = new StraxMain();
-            var authContract = new AuthContract.Dispatcher(network.EmbeddedContractContainer);
-            var dataStorageContract = new DataStorageContract.Dispatcher(network, authContract);
+            var authContract = new AuthorizationStateCheck.Dispatcher(network.EmbeddedContractContainer);
+            var dataStorageContract = new DataStorage.Dispatcher(network, authContract);
 
             var dispatchers = new List<IDispatcher>
             {
@@ -40,7 +40,7 @@ namespace Stratis.Features.SystemContracts.Tests
                 value
             };
 
-            var callData = new StateUpdateCall(DataStorageContract.Identifier, nameof(DataStorageContract.AddData), @params, 1);
+            var callData = new StateUpdateCall(DataStorage.Identifier, nameof(DataStorage.AddData), @params, 1);
 
             var context = new StateUpdateContext(state, null /* This isn't used anywhere at the moment */, callData);
 
@@ -52,7 +52,7 @@ namespace Stratis.Features.SystemContracts.Tests
             Assert.False(initialRoot.SequenceEqual(state.Root));
 
             // Query the state directly.
-            var storedData = state.GetStorageValue(DataStorageContract.Identifier.Data, Encoding.UTF8.GetBytes(key));
+            var storedData = state.GetStorageValue(DataStorage.Identifier.Data, Encoding.UTF8.GetBytes(key));
             Assert.Equal(value, Encoding.UTF8.GetString(storedData));
         }
 
@@ -60,8 +60,8 @@ namespace Stratis.Features.SystemContracts.Tests
         public void Complete_Execution_Fails()
         {
             var network = new StraxMain();
-            var authContract = new AuthContract.Dispatcher(network.EmbeddedContractContainer);
-            var dataStorageContract = new DataStorageContract.Dispatcher(network, authContract);
+            var authContract = new AuthorizationStateCheck.Dispatcher(network.EmbeddedContractContainer);
+            var dataStorageContract = new DataStorage.Dispatcher(network, authContract);
 
             var dispatchers = new List<IDispatcher>
             {
@@ -78,7 +78,7 @@ namespace Stratis.Features.SystemContracts.Tests
 
             var @params = new object[] {};
 
-            var callData = new StateUpdateCall(DataStorageContract.Identifier, "MethodThatDoesntExist", @params, 1);
+            var callData = new StateUpdateCall(DataStorage.Identifier, "MethodThatDoesntExist", @params, 1);
 
             var context = new StateUpdateContext(state, null /* This isn't used anywhere at the moment */, callData);
 

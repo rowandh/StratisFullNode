@@ -11,9 +11,9 @@ namespace Stratis.Features.SystemContracts.Tests.Contracts
     /// <summary>
     /// Sample auth contract.
     /// </summary>
-    public class AuthContract
+    public class AuthorizationStateCheck
     {
-        public AuthContract(IStateRepositoryRoot state, IEmbeddedContractContainer systemContractContainer)
+        public AuthorizationStateCheck(IStateRepositoryRoot state, IEmbeddedContractContainer systemContractContainer)
         {
             this.State = state;
             this.Container = systemContractContainer;
@@ -40,7 +40,7 @@ namespace Stratis.Features.SystemContracts.Tests.Contracts
             }
         }
 
-        public static EmbeddedContractIdentifier Identifier => new EmbeddedContractIdentifier(new uint160(SCL.Crypto.SHA3.Keccak256(Encoding.UTF8.GetBytes(nameof(AuthContract))).Take(20).ToArray()));
+        public static EmbeddedContractIdentifier Identifier => new EmbeddedContractIdentifier(new uint160(SCL.Crypto.SHA3.Keccak256(Encoding.UTF8.GetBytes(nameof(AuthorizationStateCheck))).Take(20).ToArray()));
 
         public IStateRepositoryRoot State { get; }
 
@@ -62,7 +62,7 @@ namespace Stratis.Features.SystemContracts.Tests.Contracts
         }
 
         /// <summary>
-        /// Dynamic method resolution and dependency injection for the <see cref="AuthContract"/> type
+        /// Dynamic method resolution and dependency injection for the <see cref="AuthorizationStateCheck"/> type
         /// to allow it to be invoked on-chain.
         /// 
         /// Why is this necessary?
@@ -76,7 +76,7 @@ namespace Stratis.Features.SystemContracts.Tests.Contracts
         /// 
         /// We only need to implement this class if the system contract is called on-chain. Otherwise it's not needed.
         /// </summary>
-        public class Dispatcher : IDispatcher<AuthContract>
+        public class Dispatcher : IDispatcher<AuthorizationStateCheck>
         {
             private readonly IEmbeddedContractContainer systemContractContainer;
 
@@ -85,25 +85,25 @@ namespace Stratis.Features.SystemContracts.Tests.Contracts
                 this.systemContractContainer = systemContractContainer;
             }
 
-            public EmbeddedContractIdentifier Identifier => AuthContract.Identifier;
+            public EmbeddedContractIdentifier Identifier => AuthorizationStateCheck.Identifier;
 
             public Result<object> Dispatch(IStateUpdateContext context)
             {
-                AuthContract instance = GetInstance(context);
+                AuthorizationStateCheck instance = GetInstance(context);
 
                 switch (context.CallData.MethodName)
                 {
-                    case nameof(AuthContract.IsAuthorised):
+                    case nameof(AuthorizationStateCheck.IsAuthorised):
                         var result = instance.IsAuthorised(context.CallData.Parameters[0] as string[]);
                         return Result.Ok<object>(result);
                     default:
-                        return Result.Fail<object>($"Method {context.CallData.MethodName} does not exist on type {nameof(AuthContract)} v{context.CallData.Version}");
+                        return Result.Fail<object>($"Method {context.CallData.MethodName} does not exist on type {nameof(AuthorizationStateCheck)} v{context.CallData.Version}");
                 }
             }
 
-            public AuthContract GetInstance(IStateUpdateContext context)
+            public AuthorizationStateCheck GetInstance(IStateUpdateContext context)
             {
-                return new AuthContract(context.State, this.systemContractContainer);
+                return new AuthorizationStateCheck(context.State, this.systemContractContainer);
             }
         }
     }

@@ -11,9 +11,9 @@ namespace Stratis.Features.SystemContracts.Tests.Contracts
     /// <summary>
     /// Sample contract that uses auth and stores data in the state.
     /// </summary>
-    public class DataStorageContract
+    public class DataStorage
     {
-        public DataStorageContract(IStateRepositoryRoot state, Network network, AuthContract auth)
+        public DataStorage(IStateRepositoryRoot state, Network network, AuthorizationStateCheck auth)
         {
             this.State = state;
             this.Network = network;
@@ -43,13 +43,13 @@ namespace Stratis.Features.SystemContracts.Tests.Contracts
         /// <summary>
         /// Example of a unique identifier, which we need to fit in a uint160 somehow. We can change this.
         /// </summary>
-        public static EmbeddedContractIdentifier Identifier => new EmbeddedContractIdentifier(new uint160(SCL.Crypto.SHA3.Keccak256(Encoding.UTF8.GetBytes(nameof(DataStorageContract))).Take(20).ToArray()));
+        public static EmbeddedContractIdentifier Identifier => new EmbeddedContractIdentifier(new uint160(SCL.Crypto.SHA3.Keccak256(Encoding.UTF8.GetBytes(nameof(DataStorage))).Take(20).ToArray()));
 
         public IStateRepositoryRoot State { get; }
 
         public Network Network { get; }
 
-        public AuthContract Auth { get; }
+        public AuthorizationStateCheck Auth { get; }
 
         public bool AddData(string[] signatories, string key, string value)
         {
@@ -85,22 +85,22 @@ namespace Stratis.Features.SystemContracts.Tests.Contracts
             this.State.SetStorageValue(Identifier.Data, Encoding.UTF8.GetBytes("Tx"), tx.ToBytes());
         }
 
-        public class Dispatcher : IDispatcher<DataStorageContract>
+        public class Dispatcher : IDispatcher<DataStorage>
         {
             private readonly Network network;
-            private readonly IDispatcher<AuthContract> authContract;
+            private readonly IDispatcher<AuthorizationStateCheck> authContract;
 
-            public Dispatcher(Network network, IDispatcher<AuthContract> authContract)
+            public Dispatcher(Network network, IDispatcher<AuthorizationStateCheck> authContract)
             {
                 this.network = network;
                 this.authContract = authContract;
             }
 
-            public EmbeddedContractIdentifier Identifier => DataStorageContract.Identifier;
+            public EmbeddedContractIdentifier Identifier => DataStorage.Identifier;
 
-            public DataStorageContract GetInstance(IStateUpdateContext context)
+            public DataStorage GetInstance(IStateUpdateContext context)
             {
-                return new DataStorageContract(context.State, this.network, this.authContract.GetInstance(context));
+                return new DataStorage(context.State, this.network, this.authContract.GetInstance(context));
             }
 
             /// <summary>
@@ -110,11 +110,11 @@ namespace Stratis.Features.SystemContracts.Tests.Contracts
             /// <returns>A result indicating whether or not the execution was successful.</returns>
             public Result<object> Dispatch(IStateUpdateContext context)
             {
-                DataStorageContract instance = GetInstance(context);
+                DataStorage instance = GetInstance(context);
 
                 switch (context.CallData.MethodName)
                 {
-                    case nameof(DataStorageContract.AddData):
+                    case nameof(DataStorage.AddData):
                         if (context.CallData.Parameters.Length == 3)
                         {
                             var result = instance.AddData(context.CallData.Parameters[0] as string[], context.CallData.Parameters[1] as string, context.CallData.Parameters[2] as string);
@@ -127,9 +127,9 @@ namespace Stratis.Features.SystemContracts.Tests.Contracts
                             return Result.Ok<object>(result);
                         }
 
-                        return Result.Fail<object>($"Method {context.CallData.MethodName} overload with {context.CallData.Parameters.Length} params does not exist on type {nameof(DataStorageContract)} v{context.CallData.Version}");
+                        return Result.Fail<object>($"Method {context.CallData.MethodName} overload with {context.CallData.Parameters.Length} params does not exist on type {nameof(DataStorage)} v{context.CallData.Version}");
 
-                    case nameof(DataStorageContract.PersistComplexType):
+                    case nameof(DataStorage.PersistComplexType):
                         var txRawHex = context.CallData.Parameters[0] as string;
 
                         var tx = Transaction.Parse(txRawHex, RawFormat.Satoshi);
@@ -138,12 +138,12 @@ namespace Stratis.Features.SystemContracts.Tests.Contracts
 
                         return Result.Ok<object>(DispatchResult.Void);
 
-                    case nameof(DataStorageContract.PersistComplexTypeButDoSerializationInTheParentClassInsteadOfTheDispatcher):
+                    case nameof(DataStorage.PersistComplexTypeButDoSerializationInTheParentClassInsteadOfTheDispatcher):
                         instance.PersistComplexTypeButDoSerializationInTheParentClassInsteadOfTheDispatcher(context.CallData.Parameters[0] as string);
                         return Result.Ok<object>(DispatchResult.Void);
 
                     default:
-                        return Result.Fail<object>($"Method {context.CallData.MethodName} does not exist on type {nameof(DataStorageContract)} v{context.CallData.Version}");
+                        return Result.Fail<object>($"Method {context.CallData.MethodName} does not exist on type {nameof(DataStorage)} v{context.CallData.Version}");
                 }
             }
         }
