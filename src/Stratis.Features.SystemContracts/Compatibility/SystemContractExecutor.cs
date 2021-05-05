@@ -2,6 +2,7 @@
 using System.Linq;
 using CSharpFunctionalExtensions;
 using Microsoft.Extensions.Logging;
+using NBitcoin;
 using Stratis.Bitcoin.Features.SmartContracts.Interfaces;
 using Stratis.SmartContracts.CLR;
 using Stratis.SmartContracts.Core;
@@ -36,11 +37,11 @@ namespace Stratis.Features.SystemContracts.Compatibility
 
             var initialStateRoot = this.stateRepository.Root.ToArray(); // Use ToArray to make a copy
 
-            
-            var systemContractCall = new SystemContractCall(new EmbeddedContractIdentifier(callData.ContractAddress), callData.MethodName, callData.MethodParameters, callData.VmVersion);
+            var paddedIdentifier = new EmbeddedCodeHash(callData.ContractAddress);
+            var systemContractCall = new SystemContractCall(paddedIdentifier.Id, callData.MethodName, callData.MethodParameters, callData.VmVersion);
 
-            // TODO currently need to call this with the padded identifier because the identifier is a uint160 while the whitelist is uint256
-            if (!this.whitelistedHashChecker.CheckHashWhitelisted(systemContractCall.Identifier.Padded().ToBytes()))
+            // Currently need to call this with the padded identifier because the identifier is a uint160 while the whitelist is uint256
+            if (!this.whitelistedHashChecker.CheckHashWhitelisted(paddedIdentifier.ToBytes()))
             {
                 this.logger.LogDebug("Contract is not whitelisted '{0}'.", systemContractCall.Identifier);
 
