@@ -36,7 +36,8 @@ namespace Stratis.Features.SystemContracts.Compatibility
 
             var initialStateRoot = this.stateRepository.Root.ToArray(); // Use ToArray to make a copy
 
-            var systemContractCall = new SystemContractCall(new Identifier(callData.ContractAddress), callData.MethodName, callData.MethodParameters, callData.VmVersion);
+            
+            var systemContractCall = new SystemContractCall(new EmbeddedContractIdentifier(callData.ContractAddress), callData.MethodName, callData.MethodParameters, callData.VmVersion);
 
             // TODO currently need to call this with the padded identifier because the identifier is a uint160 while the whitelist is uint256
             if (!this.whitelistedHashChecker.CheckHashWhitelisted(systemContractCall.Identifier.Padded().ToBytes()))

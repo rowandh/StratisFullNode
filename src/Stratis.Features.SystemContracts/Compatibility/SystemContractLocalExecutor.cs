@@ -58,7 +58,7 @@ namespace Stratis.Features.SystemContracts.Compatibility
 
             IStateRepositoryRoot stateSnapshot = this.state.GetSnapshotTo(hashStateRoot.ToBytes());
 
-            var systemContractCall = new SystemContractCall(new Identifier(callData.ContractAddress), callData.MethodName, callData.MethodParameters, callData.VmVersion);
+            var systemContractCall = new SystemContractCall(new EmbeddedContractIdentifier(callData.ContractAddress), callData.MethodName, callData.MethodParameters, callData.VmVersion);
 
             var context = new SystemContractTransactionContext(stateSnapshot, null, systemContractCall);
 

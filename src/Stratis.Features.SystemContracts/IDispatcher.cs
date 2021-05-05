@@ -1,4 +1,5 @@
 ﻿using CSharpFunctionalExtensions;
+using Stratis.SmartContracts.CLR;
 
 namespace Stratis.Features.SystemContracts
 {
@@ -10,7 +11,7 @@ namespace Stratis.Features.SystemContracts
     public interface IDispatcher
     {
         Result<object> Dispatch(ISystemContractTransactionContext context);
-        Identifier Identifier { get; }
+        EmbeddedContractIdentifier Identifier { get; }
     }
 
     public static class DispatchResult
