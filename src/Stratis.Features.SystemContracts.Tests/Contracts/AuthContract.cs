@@ -6,7 +6,7 @@ using NBitcoin;
 using Stratis.SmartContracts.CLR;
 using Stratis.SmartContracts.Core.State;
 
-namespace Stratis.Features.SystemContracts.Contracts
+namespace Stratis.Features.SystemContracts.Tests.Contracts
 {
     /// <summary>
     /// Sample auth contract.

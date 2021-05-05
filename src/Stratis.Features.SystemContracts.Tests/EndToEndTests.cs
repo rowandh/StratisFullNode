@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Text;
 using Stratis.Bitcoin.Networks;
-using Stratis.Features.SystemContracts.Contracts;
+using Stratis.Features.SystemContracts.Tests.Contracts;
 using Stratis.Patricia;
 using Stratis.SmartContracts.Core.State;
 using Xunit;
