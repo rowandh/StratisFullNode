@@ -34,5 +34,10 @@ namespace Stratis.SmartContracts.CLR
         {
             return hash.GetLow64() == 0 && (hash >> 64).GetLow32() == 0 && EmbeddedContractIdentifier.IsEmbedded(new EmbeddedCodeHash(hash).Id);
         }
+
+        public byte[] ToBytes()
+        {
+            return this.value.ToBytes();
+        }
     }
 }
