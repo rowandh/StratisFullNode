@@ -3,9 +3,9 @@ using Stratis.SmartContracts.Core.State;
 
 namespace Stratis.Features.SystemContracts
 {
-    public interface ISystemContractRunner
+    public interface IStateUpdater
     {
-        ISystemContractRunnerResult Execute(ISystemContractTransactionContext context);
+        IStateUpdateResult Execute(IStateUpdateContext context);
     }
 
     /// <summary>
@@ -18,21 +18,21 @@ namespace Stratis.Features.SystemContracts
     /// 
     /// The result of the call returns the updated state root, which may be the same if nothing changed.
     /// 
-    /// If the execution was not successful, <see cref="ISystemContractRunnerResult.Result"/> will be null.
+    /// If the execution was not successful, <see cref="IStateUpdateResult.Result"/> will be null.
     /// 
-    /// If the execution was successful, <see cref="ISystemContractRunnerResult.Result"/> will be the result of the execution,
+    /// If the execution was successful, <see cref="IStateUpdateResult.Result"/> will be the result of the execution,
     /// or <see cref="DispatchResult.Void"/> if the method called is a void.
     /// </summary>
-    public class SystemContractRunner : ISystemContractRunner
+    public class StateUpdater : IStateUpdater
     {
         private readonly IDispatcherRegistry dispatcherRegistry;
 
-        public SystemContractRunner(IDispatcherRegistry dispatchers)
+        public StateUpdater(IDispatcherRegistry dispatchers)
         {
             this.dispatcherRegistry = dispatchers;
         }
 
-        public ISystemContractRunnerResult Execute(ISystemContractTransactionContext context)
+        public IStateUpdateResult Execute(IStateUpdateContext context)
         {
             IStateRepositoryRoot state = context.State;
 
@@ -43,7 +43,7 @@ namespace Stratis.Features.SystemContracts
             if (!this.dispatcherRegistry.HasDispatcher(context.CallData.Identifier))
             {
                 // Return the same state.
-                return new SystemContractRunnerResult(state);
+                return new StateUpdateResult(state);
             }
 
             IDispatcher dispatcher = this.dispatcherRegistry.GetDispatcher(context.CallData.Identifier);
@@ -56,11 +56,11 @@ namespace Stratis.Features.SystemContracts
                 // Return to the root state.
                 state.SyncToRoot(initialRoot);
 
-                return new SystemContractRunnerResult(state);
+                return new StateUpdateResult(state);
             }
 
             // Return new state.
-            return new SystemContractRunnerResult(state, executionResult.Value);
+            return new StateUpdateResult(state, executionResult.Value);
         }
     }
 }

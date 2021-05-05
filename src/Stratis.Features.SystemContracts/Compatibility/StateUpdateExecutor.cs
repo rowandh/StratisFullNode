@@ -13,17 +13,17 @@ namespace Stratis.Features.SystemContracts.Compatibility
     /// <summary>
     /// Wrapper around the system contract runner for compatibility with existing SC execution model.
     /// </summary>
-    public class SystemContractExecutor : IContractExecutor
+    public class StateUpdateExecutor : IContractExecutor
     {
-        private readonly ISystemContractRunner runner;
+        private readonly IStateUpdater runner;
         private readonly IStateRepositoryRoot stateRepository;
         private readonly IWhitelistedHashChecker whitelistedHashChecker;
         private readonly ICallDataSerializer callDataSerializer;
         private ILogger logger;
 
-        public SystemContractExecutor(ILoggerFactory loggerFactory, ISystemContractRunner runner, ICallDataSerializer callDataSerializer, IWhitelistedHashChecker whitelistedHashChecker, IStateRepositoryRoot stateRepository)
+        public StateUpdateExecutor(ILoggerFactory loggerFactory, IStateUpdater runner, ICallDataSerializer callDataSerializer, IWhitelistedHashChecker whitelistedHashChecker, IStateRepositoryRoot stateRepository)
         {
-            this.logger = loggerFactory.CreateLogger(typeof(SystemContractExecutor).FullName);
+            this.logger = loggerFactory.CreateLogger(typeof(StateUpdateExecutor).FullName);
             this.runner = runner;
             this.stateRepository = stateRepository;
             this.whitelistedHashChecker = whitelistedHashChecker;
@@ -41,19 +41,19 @@ namespace Stratis.Features.SystemContracts.Compatibility
             var initialStateRoot = this.stateRepository.Root.ToArray(); // Use ToArray to make a copy
 
             var paddedIdentifier = new EmbeddedCodeHash(callData.ContractAddress);
-            var systemContractCall = new SystemContractCall(paddedIdentifier.Id, callData.MethodName, callData.MethodParameters, callData.VmVersion);
+            var systemContractCall = new StateUpdateCall(paddedIdentifier.Id, callData.MethodName, callData.MethodParameters, callData.VmVersion);
 
             // Check if this identifier is currently allowed to update the state.
             if (!this.whitelistedHashChecker.CheckHashWhitelisted(paddedIdentifier.ToBytes()))
             {
                 this.logger.LogDebug("Contract is not whitelisted '{0}'.", systemContractCall.Identifier);
 
-                return new SystemContractExecutionResult(callData.ContractAddress, null);
+                return new StateUpdateExecutionResult(callData.ContractAddress, null);
             }
 
             // Make some context and invoke the method on the class.
-            var context = new SystemContractTransactionContext(this.stateRepository, transactionContext.Transaction, systemContractCall);
-            ISystemContractRunnerResult result = this.runner.Execute(context);
+            var context = new StateUpdateContext(this.stateRepository, transactionContext.Transaction, systemContractCall);
+            IStateUpdateResult result = this.runner.Execute(context);
 
             // Only update if there was a change.
             if (!result.NewState.Root.SequenceEqual(initialStateRoot))
@@ -61,7 +61,7 @@ namespace Stratis.Features.SystemContracts.Compatibility
                 this.stateRepository.SyncToRoot(result.NewState.Root);
             }
 
-            return new SystemContractExecutionResult(callData.ContractAddress, result.Result);
+            return new StateUpdateExecutionResult(callData.ContractAddress, result.Result);
         }
     }
 }

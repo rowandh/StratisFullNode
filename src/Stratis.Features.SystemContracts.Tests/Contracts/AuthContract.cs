@@ -87,7 +87,7 @@ namespace Stratis.Features.SystemContracts.Tests.Contracts
 
             public EmbeddedContractIdentifier Identifier => AuthContract.Identifier;
 
-            public Result<object> Dispatch(ISystemContractTransactionContext context)
+            public Result<object> Dispatch(IStateUpdateContext context)
             {
                 AuthContract instance = GetInstance(context);
 
@@ -101,7 +101,7 @@ namespace Stratis.Features.SystemContracts.Tests.Contracts
                 }
             }
 
-            public AuthContract GetInstance(ISystemContractTransactionContext context)
+            public AuthContract GetInstance(IStateUpdateContext context)
             {
                 return new AuthContract(context.State, this.systemContractContainer);
             }

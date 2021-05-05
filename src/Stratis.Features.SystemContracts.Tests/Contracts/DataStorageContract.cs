@@ -98,7 +98,7 @@ namespace Stratis.Features.SystemContracts.Tests.Contracts
 
             public EmbeddedContractIdentifier Identifier => DataStorageContract.Identifier;
 
-            public DataStorageContract GetInstance(ISystemContractTransactionContext context)
+            public DataStorageContract GetInstance(IStateUpdateContext context)
             {
                 return new DataStorageContract(context.State, this.network, this.authContract.GetInstance(context));
             }
@@ -108,7 +108,7 @@ namespace Stratis.Features.SystemContracts.Tests.Contracts
             /// </summary>
             /// <param name="context"></param>
             /// <returns>A result indicating whether or not the execution was successful.</returns>
-            public Result<object> Dispatch(ISystemContractTransactionContext context)
+            public Result<object> Dispatch(IStateUpdateContext context)
             {
                 DataStorageContract instance = GetInstance(context);
 

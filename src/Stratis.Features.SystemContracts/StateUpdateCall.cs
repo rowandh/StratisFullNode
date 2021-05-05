@@ -5,9 +5,9 @@ namespace Stratis.Features.SystemContracts
     /// <summary>
     /// Defines an on-chain call to a system contract.
     /// </summary>
-    public class SystemContractCall
+    public class StateUpdateCall
     {
-        public SystemContractCall(EmbeddedContractIdentifier identifier, string methodName, object[] parameters, int version = 1)
+        public StateUpdateCall(EmbeddedContractIdentifier identifier, string methodName, object[] parameters, int version = 1)
         {
             this.Identifier = identifier;
             this.MethodName = methodName;

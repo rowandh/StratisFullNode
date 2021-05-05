@@ -10,9 +10,9 @@ namespace Stratis.Features.SystemContracts.Compatibility
     ///
     /// Uses defaults most values that are currently unused for system contracts.
     /// </summary>
-    public class SystemContractExecutionResult : IContractExecutionResult
+    public class StateUpdateExecutionResult : IContractExecutionResult
     {
-        public SystemContractExecutionResult(uint160 to, object @return)
+        public StateUpdateExecutionResult(uint160 to, object @return)
         {
             this.To = to;
             this.Return = @return;

@@ -5,12 +5,12 @@ namespace Stratis.Features.SystemContracts
 {
     public interface IDispatcher<T> : IDispatcher
     {
-        T GetInstance(ISystemContractTransactionContext context);
+        T GetInstance(IStateUpdateContext context);
     }
 
     public interface IDispatcher
     {
-        Result<object> Dispatch(ISystemContractTransactionContext context);
+        Result<object> Dispatch(IStateUpdateContext context);
         EmbeddedContractIdentifier Identifier { get; }
     }
 

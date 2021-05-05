@@ -25,7 +25,7 @@ namespace Stratis.Features.SystemContracts.Tests
             };
 
             var dispatcherRegistry = new DispatcherRegistry(dispatchers);
-            var runner = new SystemContractRunner(dispatcherRegistry);
+            var runner = new StateUpdater(dispatcherRegistry);
 
             var state = new StateRepositoryRoot(new MemoryDictionarySource());
 
@@ -40,11 +40,11 @@ namespace Stratis.Features.SystemContracts.Tests
                 value
             };
 
-            var callData = new SystemContractCall(DataStorageContract.Identifier, nameof(DataStorageContract.AddData), @params, 1);
+            var callData = new StateUpdateCall(DataStorageContract.Identifier, nameof(DataStorageContract.AddData), @params, 1);
 
-            var context = new SystemContractTransactionContext(state, null /* This isn't used anywhere at the moment */, callData);
+            var context = new StateUpdateContext(state, null /* This isn't used anywhere at the moment */, callData);
 
-            ISystemContractRunnerResult result = runner.Execute(context);
+            IStateUpdateResult result = runner.Execute(context);
 
             Assert.Equal(true, result.Result);
 
@@ -70,7 +70,7 @@ namespace Stratis.Features.SystemContracts.Tests
             };
 
             var dispatcherRegistry = new DispatcherRegistry(dispatchers);
-            var runner = new SystemContractRunner(dispatcherRegistry);
+            var runner = new StateUpdater(dispatcherRegistry);
 
             var state = new StateRepositoryRoot(new MemoryDictionarySource());
 
@@ -78,11 +78,11 @@ namespace Stratis.Features.SystemContracts.Tests
 
             var @params = new object[] {};
 
-            var callData = new SystemContractCall(DataStorageContract.Identifier, "MethodThatDoesntExist", @params, 1);
+            var callData = new StateUpdateCall(DataStorageContract.Identifier, "MethodThatDoesntExist", @params, 1);
 
-            var context = new SystemContractTransactionContext(state, null /* This isn't used anywhere at the moment */, callData);
+            var context = new StateUpdateContext(state, null /* This isn't used anywhere at the moment */, callData);
 
-            ISystemContractRunnerResult result = runner.Execute(context);
+            IStateUpdateResult result = runner.Execute(context);
 
             Assert.Null(result.Result);
 

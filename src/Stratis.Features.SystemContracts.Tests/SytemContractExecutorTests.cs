@@ -30,9 +30,9 @@ namespace Stratis.Features.SystemContracts.Tests
             var whitelist = new Mock<IWhitelistedHashChecker>();
             whitelist.Setup(w => w.CheckHashWhitelisted(It.IsAny<byte[]>())).Returns(false);
 
-            var executor = new SystemContractExecutor(
+            var executor = new StateUpdateExecutor(
                 logsMock.Object, 
-                Mock.Of<ISystemContractRunner>(), 
+                Mock.Of<IStateUpdater>(), 
                 callDataSerializerMock.Object, 
                 whitelist.Object,
                 stateMock.Object);
@@ -63,10 +63,10 @@ namespace Stratis.Features.SystemContracts.Tests
             var newState = new Mock<IStateRepositoryRoot>();
             newState.Setup(s => s.Root).Returns(root);
 
-            var runner = new Mock<ISystemContractRunner>();
-            runner.Setup(r => r.Execute(It.IsAny<ISystemContractTransactionContext>())).Returns(new SystemContractRunnerResult(newState.Object));
+            var runner = new Mock<IStateUpdater>();
+            runner.Setup(r => r.Execute(It.IsAny<IStateUpdateContext>())).Returns(new StateUpdateResult(newState.Object));
 
-            var executor = new SystemContractExecutor(
+            var executor = new StateUpdateExecutor(
                 logsMock.Object,
                 runner.Object,
                 callDataSerializerMock.Object,
@@ -100,10 +100,10 @@ namespace Stratis.Features.SystemContracts.Tests
             var newState = new Mock<IStateRepositoryRoot>();
             newState.Setup(s => s.Root).Returns(newRoot);
 
-            var runner = new Mock<ISystemContractRunner>();
-            runner.Setup(r => r.Execute(It.IsAny<ISystemContractTransactionContext>())).Returns(new SystemContractRunnerResult(newState.Object));
+            var runner = new Mock<IStateUpdater>();
+            runner.Setup(r => r.Execute(It.IsAny<IStateUpdateContext>())).Returns(new StateUpdateResult(newState.Object));
 
-            var executor = new SystemContractExecutor(
+            var executor = new StateUpdateExecutor(
                 logsMock.Object,
                 runner.Object,
                 callDataSerializerMock.Object,

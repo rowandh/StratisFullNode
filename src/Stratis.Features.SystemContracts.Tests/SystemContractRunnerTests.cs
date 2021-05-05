@@ -18,16 +18,16 @@ namespace Stratis.Features.SystemContracts.Tests
             var initialStateMock = new Mock<IStateRepository>();
 
             stateMock.Setup(s => s.StartTracking()).Returns(initialStateMock.Object);
-            var contextMock = new Mock<ISystemContractTransactionContext>();
+            var contextMock = new Mock<IStateUpdateContext>();
             contextMock.SetupGet(p => p.State).Returns(stateMock.Object);
-            contextMock.SetupGet(p => p.CallData).Returns(new SystemContractCall(new EmbeddedContractIdentifier(uint160.Zero), "", null));
+            contextMock.SetupGet(p => p.CallData).Returns(new StateUpdateCall(new EmbeddedContractIdentifier(uint160.Zero), "", null));
 
             // We don't have the dispatcher.
             dispatchersMock.Setup(d => d.HasDispatcher(It.IsAny<EmbeddedContractIdentifier>())).Returns(false);
 
-            var runner = new SystemContractRunner(dispatchersMock.Object);
+            var runner = new StateUpdater(dispatchersMock.Object);
 
-            ISystemContractRunnerResult result = runner.Execute(contextMock.Object);
+            IStateUpdateResult result = runner.Execute(contextMock.Object);
 
             stateMock.Verify(m => m.SyncToRoot(It.IsAny<byte[]>()), Times.Never);
 
@@ -45,20 +45,20 @@ namespace Stratis.Features.SystemContracts.Tests
             var root = new byte[] { };
             stateMock.Setup(s => s.StartTracking()).Returns(initialStateMock.Object);
             stateMock.Setup(s => s.Root).Returns(root);
-            var contextMock = new Mock<ISystemContractTransactionContext>();
+            var contextMock = new Mock<IStateUpdateContext>();
             contextMock.SetupGet(p => p.State).Returns(stateMock.Object);
-            contextMock.SetupGet(p => p.CallData).Returns(new SystemContractCall(new EmbeddedContractIdentifier(uint160.Zero), "", null));
+            contextMock.SetupGet(p => p.CallData).Returns(new StateUpdateCall(new EmbeddedContractIdentifier(uint160.Zero), "", null));
 
             var dispatcherMock = new Mock<IDispatcher>();
-            dispatcherMock.Setup(m => m.Dispatch(It.IsAny<ISystemContractTransactionContext>())).Returns(Result.Fail<object>("Error"));
+            dispatcherMock.Setup(m => m.Dispatch(It.IsAny<IStateUpdateContext>())).Returns(Result.Fail<object>("Error"));
 
             // We don't have the dispatcher.
             dispatchersMock.Setup(d => d.HasDispatcher(It.IsAny<EmbeddedContractIdentifier>())).Returns(true);
             dispatchersMock.Setup(d => d.GetDispatcher(It.IsAny<EmbeddedContractIdentifier>())).Returns(dispatcherMock.Object);
 
-            var runner = new SystemContractRunner(dispatchersMock.Object);
+            var runner = new StateUpdater(dispatchersMock.Object);
 
-            ISystemContractRunnerResult result = runner.Execute(contextMock.Object);
+            IStateUpdateResult result = runner.Execute(contextMock.Object);
 
             // Check that we sync to the initial root
             stateMock.Verify(m => m.SyncToRoot(root), Times.Once);
@@ -78,22 +78,22 @@ namespace Stratis.Features.SystemContracts.Tests
             var initialStateMock = new Mock<IStateRepository>();
 
             stateMock.Setup(s => s.StartTracking()).Returns(initialStateMock.Object);
-            var contextMock = new Mock<ISystemContractTransactionContext>();
+            var contextMock = new Mock<IStateUpdateContext>();
             contextMock.SetupGet(p => p.State).Returns(stateMock.Object);
-            contextMock.SetupGet(p => p.CallData).Returns(new SystemContractCall(new EmbeddedContractIdentifier(uint160.Zero), "", null));
+            contextMock.SetupGet(p => p.CallData).Returns(new StateUpdateCall(new EmbeddedContractIdentifier(uint160.Zero), "", null));
 
             var dispatcherMock = new Mock<IDispatcher>();
 
             // Dispatching successful
-            dispatcherMock.Setup(m => m.Dispatch(It.IsAny<ISystemContractTransactionContext>())).Returns(Result.Ok(DispatchResult.Void));
+            dispatcherMock.Setup(m => m.Dispatch(It.IsAny<IStateUpdateContext>())).Returns(Result.Ok(DispatchResult.Void));
 
             // We don't have the dispatcher.
             dispatchersMock.Setup(d => d.HasDispatcher(It.IsAny<EmbeddedContractIdentifier>())).Returns(true);
             dispatchersMock.Setup(d => d.GetDispatcher(It.IsAny<EmbeddedContractIdentifier>())).Returns(dispatcherMock.Object);
 
-            var runner = new SystemContractRunner(dispatchersMock.Object);
+            var runner = new StateUpdater(dispatchersMock.Object);
 
-            ISystemContractRunnerResult result = runner.Execute(contextMock.Object);
+            IStateUpdateResult result = runner.Execute(contextMock.Object);
 
             stateMock.Verify(m => m.SyncToRoot(It.IsAny<byte[]>()), Times.Never);
 
