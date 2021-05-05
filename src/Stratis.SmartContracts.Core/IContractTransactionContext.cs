@@ -4,8 +4,6 @@ namespace Stratis.SmartContracts.Core
 {
     public interface IContractTransactionContext
     {
-        Transaction Transaction { get; }
-
         /// <summary>
         /// The transaction associated with this context.
         /// </summary>
