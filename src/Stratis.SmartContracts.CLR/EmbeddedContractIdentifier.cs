@@ -32,6 +32,8 @@ namespace Stratis.SmartContracts.CLR
         {
             return id.GetLow64() == BitConverter.ToUInt64(embeddedContractSignature);
         }
+
+        public uint160 Data => this.value;
     }
 
 }

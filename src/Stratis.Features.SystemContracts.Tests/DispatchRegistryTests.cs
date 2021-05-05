@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Moq;
 using NBitcoin;
+using Stratis.SmartContracts.CLR;
 using Xunit;
 
 namespace Stratis.Features.SystemContracts.Tests
@@ -10,11 +11,11 @@ namespace Stratis.Features.SystemContracts.Tests
         [Fact]
         public void Identifiers_Are_Returned()
         {
-            var identifierA = new Identifier(uint160.Zero);
+            var identifierA = new EmbeddedContractIdentifier(uint160.Zero);
             var dispatcherA = new Mock<IDispatcher>();
             dispatcherA.Setup(x => x.Identifier).Returns(identifierA);
 
-            var identifierB = new Identifier(uint160.One);
+            var identifierB = new EmbeddedContractIdentifier(uint160.One);
             var dispatcherB = new Mock<IDispatcher>();
             dispatcherB.Setup(x => x.Identifier).Returns(identifierB);
 

@@ -15,7 +15,7 @@ namespace Stratis.Features.SystemContracts.Tests
         public void Complete_Execution_Success()
         {
             var network = new StraxMain();
-            var authContract = new AuthContract.Dispatcher(network.SystemContractContainer);
+            var authContract = new AuthContract.Dispatcher(network.EmbeddedContractContainer);
             var dataStorageContract = new DataStorageContract.Dispatcher(network, authContract);
 
             var dispatchers = new List<IDispatcher>
@@ -60,7 +60,7 @@ namespace Stratis.Features.SystemContracts.Tests
         public void Complete_Execution_Fails()
         {
             var network = new StraxMain();
-            var authContract = new AuthContract.Dispatcher(network.SystemContractContainer);
+            var authContract = new AuthContract.Dispatcher(network.EmbeddedContractContainer);
             var dataStorageContract = new DataStorageContract.Dispatcher(network, authContract);
 
             var dispatchers = new List<IDispatcher>
