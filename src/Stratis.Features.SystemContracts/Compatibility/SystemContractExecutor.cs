@@ -30,6 +30,9 @@ namespace Stratis.Features.SystemContracts.Compatibility
             this.callDataSerializer = callDataSerializer;
         }
 
+        /// <summary>
+        /// Parses data from a transaction and calls a method on a class to calculate a new hash state root.
+        /// </summary>
         public IContractExecutionResult Execute(IContractTransactionContext transactionContext)
         {
             Result<ContractTxData> callDataDeserializationResult = this.callDataSerializer.Deserialize(transactionContext.Data);
@@ -40,7 +43,7 @@ namespace Stratis.Features.SystemContracts.Compatibility
             var paddedIdentifier = new EmbeddedCodeHash(callData.ContractAddress);
             var systemContractCall = new SystemContractCall(paddedIdentifier.Id, callData.MethodName, callData.MethodParameters, callData.VmVersion);
 
-            // Currently need to call this with the padded identifier because the identifier is a uint160 while the whitelist is uint256
+            // Check if this identifier is currently allowed to update the state.
             if (!this.whitelistedHashChecker.CheckHashWhitelisted(paddedIdentifier.ToBytes()))
             {
                 this.logger.LogDebug("Contract is not whitelisted '{0}'.", systemContractCall.Identifier);
@@ -48,6 +51,7 @@ namespace Stratis.Features.SystemContracts.Compatibility
                 return new SystemContractExecutionResult(callData.ContractAddress, null);
             }
 
+            // Make some context and invoke the method on the class.
             var context = new SystemContractTransactionContext(this.stateRepository, transactionContext.Transaction, systemContractCall);
             ISystemContractRunnerResult result = this.runner.Execute(context);
 
