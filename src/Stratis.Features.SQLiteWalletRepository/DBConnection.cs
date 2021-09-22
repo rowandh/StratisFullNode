@@ -107,7 +107,7 @@ namespace Stratis.Features.SQLiteWalletRepository
 
             try
             {
-                this.SQLiteConnection = new SQLiteConnection(path);
+                this.SQLiteConnection = new SQLiteConnection(path, SQLiteOpenFlags.Create | SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex);
             }
             catch (SQLiteException err) when (err.Result == SQLite3.Result.CannotOpen)
             {
