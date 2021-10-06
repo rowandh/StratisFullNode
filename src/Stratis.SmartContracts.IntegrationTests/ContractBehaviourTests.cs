@@ -1,7 +1,11 @@
-﻿using NBitcoin;
+﻿using System.Linq;
+using System.Text;
+using NBitcoin;
+using Nethereum.RLP;
 using Stratis.Bitcoin.Features.SmartContracts.Models;
 using Stratis.SmartContracts.CLR;
 using Stratis.SmartContracts.CLR.Compilation;
+using Stratis.SmartContracts.CLR.Serialization;
 using Stratis.SmartContracts.Core.Util;
 using Stratis.SmartContracts.RuntimeObserver;
 using Stratis.SmartContracts.Tests.Common.MockChain;
@@ -183,6 +187,86 @@ namespace Stratis.SmartContracts.IntegrationTests
             initialState = localExecutor.Execute((ulong)this.node1.CoreNode.FullNode.ChainIndexer.Height - 1, this.mockChain.Nodes[0].MinerAddress.Address.ToUint160(this.node1.CoreNode.FullNode.Network), 0, call);
 
             Assert.Equal(12345, (int)initialState.Return);
+        }
+
+        [Fact]
+        public void Local_Call_Should_Produce_Logs_And_Transfers()
+        {
+            // Demonstrates some potentially unusual behaviour when saving contract state.
+            var localExecutor = this.mockChain.Nodes[0].CoreNode.FullNode.NodeService<ILocalExecutor>();
+
+            // Ensure fixture is funded.
+            this.mockChain.MineBlocks(1);
+
+            // Deploy contract
+            ContractCompilationResult compilationResult = ContractCompiler.CompileFile("SmartContracts/LocalCallTests.cs");
+
+            Assert.True(compilationResult.Success);
+            BuildCreateContractTransactionResponse preResponse = this.node1.SendCreateContractTransaction(compilationResult.Compilation, 10);
+            this.mockChain.WaitAllMempoolCount(1);
+            this.mockChain.MineBlocks(1);
+            Assert.NotNull(this.node1.GetCode(preResponse.NewContractAddress));
+            Assert.Equal(1000000000UL, this.node1.GetContractBalance(preResponse.NewContractAddress));
+
+            uint256 currentHash = this.node1.GetLastBlock().GetHash();
+
+            NBitcoin.Block lastBlock = this.node1.GetLastBlock();
+
+            ReceiptResponse receipt = this.node1.GetReceipt(preResponse.TransactionId.ToString());
+            Assert.True(receipt.Success);
+
+            // Create a log in a local call
+            var call = new ContractTxData(1, 100, (Gas)250000, preResponse.NewContractAddress.ToUint160(this.node1.CoreNode.FullNode.Network), nameof(LocalCallTests.CreateLog));
+            var createLogResult = localExecutor.Execute((ulong)this.node1.CoreNode.FullNode.ChainIndexer.Height, this.mockChain.Nodes[0].MinerAddress.Address.ToUint160(this.node1.CoreNode.FullNode.Network), 0, call);
+
+            Assert.NotEmpty(createLogResult.Logs);
+            RLPCollection collection = (RLPCollection)RLP.Decode(createLogResult.Logs[0].Data);
+            var loggedData = Encoding.UTF8.GetString(collection[0].RLPData);
+            Assert.Equal(nameof(LocalCallTests.CreateLog), loggedData);
+
+            // Create a transfer in a local call
+            call = new ContractTxData(1, 100, (Gas)250000, preResponse.NewContractAddress.ToUint160(this.node1.CoreNode.FullNode.Network), nameof(LocalCallTests.CreateTransfer));
+            var createTransferResult = localExecutor.Execute((ulong)this.node1.CoreNode.FullNode.ChainIndexer.Height, this.mockChain.Nodes[0].MinerAddress.Address.ToUint160(this.node1.CoreNode.FullNode.Network), 0, call);
+
+            Assert.NotEmpty(createTransferResult.InternalTransfers);
+            Assert.Equal(Address.Zero.ToUint160(), createTransferResult.InternalTransfers[0].To);
+            Assert.Equal(1UL, createTransferResult.InternalTransfers[0].Value);
+        }
+
+        [Fact]
+        public void Local_Call_Returns_Correctly_Formatted_Value()
+        {
+            var network = this.mockChain.Nodes[0].CoreNode.FullNode.Network;
+
+            // Ensure fixture is funded.
+            this.mockChain.MineBlocks(1);
+
+            // Deploy contract
+            ContractCompilationResult compilationResult = ContractCompiler.CompileFile("SmartContracts/LocalCallTests.cs");
+
+            Assert.True(compilationResult.Success);
+            BuildCreateContractTransactionResponse preResponse = this.node1.SendCreateContractTransaction(compilationResult.Compilation, 10);
+            this.mockChain.WaitAllMempoolCount(1);
+            this.mockChain.MineBlocks(1);
+            Assert.NotNull(this.node1.GetCode(preResponse.NewContractAddress));
+            Assert.Equal(1000000000UL, this.node1.GetContractBalance(preResponse.NewContractAddress));
+
+            var result = this.node2.CallContractMethodLocally(nameof(LocalCallTests.CreateLog), preResponse.NewContractAddress, 0);
+
+            Assert.False(result.Revert);
+            Assert.Equal(nameof(LocalCallTests.CalledLog), result.Logs[0].Log.Event);
+            Assert.Equal(nameof(LocalCallTests.CreateLog), result.Logs[0].Log.Name);
+
+            result = this.node2.CallContractMethodLocally(nameof(LocalCallTests.CreateTransfer), preResponse.NewContractAddress, 0);
+
+            Assert.NotEmpty(result.InternalTransfers);
+            Assert.Equal(1UL, result.InternalTransfers[0].Value);
+            Assert.Equal(preResponse.NewContractAddress, result.InternalTransfers[0].From);
+            Assert.Equal(uint160.Zero.ToBase58Address(network), result.InternalTransfers[0].To);
+
+            result = this.node2.CallContractMethodLocally(nameof(LocalCallTests.Return), preResponse.NewContractAddress, 0);
+
+            Assert.Equal(true, result.Return);
         }
     }
 
