@@ -86,6 +86,14 @@ namespace Stratis.SmartContracts.CLR
             return type.GetConstructor(types) != null;
         }
 
+        public ConstructorInfo GetConstructor()
+        {
+            ConstructorInfo[] constructors = this.Type.GetConstructors();
+
+            // Single constructor is already enforced by validation.
+            return constructors.FirstOrDefault();
+        }
+
         /// <inheritdoc />
         public IContractInvocationResult InvokeConstructor(IReadOnlyList<object> parameters)
         {
@@ -97,9 +105,7 @@ namespace Stratis.SmartContracts.CLR
                 if (parameters != null)
                     invokeParams = invokeParams.Concat(parameters).ToArray();
 
-                Type[] types = invokeParams.Select(p => p.GetType()).ToArray();
-
-                ConstructorInfo methodToInvoke = this.Type.GetConstructor(types);
+                ConstructorInfo methodToInvoke = this.GetConstructor();
 
                 if (methodToInvoke == null)
                     return ContractInvocationResult.Failure(ContractInvocationErrorType.MethodDoesNotExist);
