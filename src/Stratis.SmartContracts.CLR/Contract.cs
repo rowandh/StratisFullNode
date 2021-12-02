@@ -105,10 +105,13 @@ namespace Stratis.SmartContracts.CLR
                 if (parameters != null)
                     invokeParams = invokeParams.Concat(parameters).ToArray();
 
-                ConstructorInfo methodToInvoke = this.GetConstructor();
+                if (invokeParams != null && invokeParams.Any(p => p == null))
+                {
+                    // Do not support binding of null parameter values.
+                    return ContractInvocationResult.Failure(ContractInvocationErrorType.ParameterTypesDontMatch);
+                }
 
-                if (methodToInvoke == null)
-                    return ContractInvocationResult.Failure(ContractInvocationErrorType.MethodDoesNotExist);
+                ConstructorInfo methodToInvoke = this.GetConstructor();
 
                 IContractInvocationResult result = this.InvokeInternal(methodToInvoke, invokeParams);
 
@@ -132,7 +135,7 @@ namespace Stratis.SmartContracts.CLR
 
             object[] invokeParams = call.Parameters?.ToArray() ?? new object[0];
 
-            if (invokeParams.Any(p => p == null))
+            if (invokeParams != null && invokeParams.Any(p => p == null))
             {
                 // Do not support binding of null parameter values.
                 return ContractInvocationResult.Failure(ContractInvocationErrorType.ParameterTypesDontMatch);
@@ -196,6 +199,9 @@ namespace Stratis.SmartContracts.CLR
         /// </summary>
         private IContractInvocationResult InvokeInternal(MethodBase method, object[] parameters)
         {
+            if (method == null)
+                return ContractInvocationResult.Failure(ContractInvocationErrorType.MethodDoesNotExist);
+
             try
             {
                 object result = method.Invoke(this.instance, parameters);
