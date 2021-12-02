@@ -40,25 +40,12 @@ namespace Stratis.SmartContracts.CLR.Tests
 
         public class TestContract : SmartContract
         {
-            public TestContract(ISmartContractState smartContractState) 
-                : base(smartContractState)
-            {
-                this.ConstructorCalledCount++;
-                this.State = smartContractState;
-            }
-
             public TestContract(ISmartContractState smartContractState, int param)
                 : base(smartContractState)
             {
                 this.ConstructorCalledCount++;
                 this.State = smartContractState;
                 this.Param = param;
-            }
-
-            public TestContract(int a, string b)
-            : base(null)
-            {
-
             }
 
             public void Test1()
@@ -124,13 +111,11 @@ namespace Stratis.SmartContracts.CLR.Tests
         [Fact]
         public void Invoke_Constructor_With_Null_Params()
         {
-            IContractInvocationResult result = this.contract.InvokeConstructor(null);
+            IContractInvocationResult result = this.contract.InvokeConstructor(new List<object> { null, null });
 
-            Assert.Equal(ContractInvocationErrorType.None, result.InvocationErrorType);
-            Assert.True(result.IsSuccess);
-            // We expect the count to be 2 because we call the constructor when setting up the test as well
-            Assert.Equal(1, this.instance.ConstructorCalledCount);
-            Assert.Equal(this.state, this.instance.State);
+            Assert.Equal(ContractInvocationErrorType.ParameterTypesDontMatch, result.InvocationErrorType);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(0, this.instance.ConstructorCalledCount);
         }
 
         [Fact]
@@ -156,7 +141,7 @@ namespace Stratis.SmartContracts.CLR.Tests
                     param, "abc"
                 });
 
-            Assert.Equal(ContractInvocationErrorType.MethodDoesNotExist, result.InvocationErrorType);
+            Assert.Equal(ContractInvocationErrorType.ParameterCountIncorrect, result.InvocationErrorType);
             Assert.False(result.IsSuccess);
             Assert.Equal(0, this.instance.ConstructorCalledCount);
         }
@@ -170,7 +155,7 @@ namespace Stratis.SmartContracts.CLR.Tests
                     "123", "abc"
                 });
 
-            Assert.Equal(ContractInvocationErrorType.MethodDoesNotExist, result.InvocationErrorType);
+            Assert.Equal(ContractInvocationErrorType.ParameterCountIncorrect, result.InvocationErrorType);
             Assert.False(result.IsSuccess);
             Assert.Equal(0, this.instance.ConstructorCalledCount);
         }
